@@ -1,0 +1,22 @@
+<!DOCTYPE web-app PUBLIC
+ "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+ "http://java.sun.com/dtd/web-app_2_3.dtd" >
+
+<web-app>
+  <display-name>Archetype Created Web Application</display-name>
+  <servlet>
+        <servlet-name>registry</servlet-name>
+        <servlet-class>orca.registry.RegistryServlet</servlet-class>
+        <init-param>
+          <param-name>enabledForExtensions</param-name>
+          <param-value>true</param-value>
+          <description>
+            Sets, whether the servlet supports vendor extensions for XML-RPC.
+          </description>
+        </init-param>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>registry</servlet-name>
+        <url-pattern>/</url-pattern>
+    </servlet-mapping>
+</web-app>
