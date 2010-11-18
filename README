@@ -1,0 +1,72 @@
+Registry configuration actions while deploying the ORCA container:
+------------------------------------------------------------------
+
+ORCA Actor Registry serves as a snapshot of all available actors deployed in various ORCA containers. When an ORCA container boots up, the SM/AM/Broker actors deployed in the container are automatically registered into the Actor Registry. Two new properties have been added to container.properties - 'registry.url' and 'registry.method' . When the container boots up, each available actor is registered with an XML-RPC server (the Registry Server) running at the url stored in the property, 'registry.url'  by invoking the method stored in the property, 'registry.method'. If these properties are not set in container.properties, the container would not register the actors. Also, it has to be ensured that the XML-RPC server is running at the specified url.
+
+Users deploying ORCA containers who want to register their actors in the registry have to add these two properties in container.properties. For example:
+
+registry.url=http://geni-test.renci.org:11080/registry/
+registry.method=registryService.insert
+
+Registry Servlet:
+----------------
+
+The Registry Servlet is an XML-RPC servlet that listens to invocations of actor registry calls from ORCA containers. It must be deployed inside Tomcat or Jetty or other container. A Mysql database storing actor data is attached to the XML-RPC server. The invocation of an actor registry method on the XML-RPC server results in an insertion into the database. For each actor, the following attributes are stored - (1) Actor Name, (2) Actor GUID, (3) Actor Type, (4) Actor Description, (5) Actor SOAPAxis2 url, (6) Actor class name, (7) Actor Policy, (8) Actor public key and (9) Actor certificate. The schema for the registry is stored in $ORCA_SRC/core/schema/mysql/registry.schema.sql
+ 
+To set up the mysql registry database, create a user called "registry" with password "registry" and create a database with name "ActorRegistry". Inside this database create a table called "Actors". Use the schema in $ORCA_SRC/core/schema/mysql/registry.schema.sql. (To change the db username, password and database name, edit DatabaseOperations.java). 
+
+Once you have a user "registry" and a database "ActorRegistry", use the following to create the "Actors" table:
+
+bash$ mysql -u registry --password="registry" <$ORCA_SRC/core/schema/mysql/registry.schema.sql
+
+To compile the registry servlet type "mvn package" in $ORCA_SRC/registry. 
+
+The resulting .war file in $ORCA_SRC/registry/target/ can be deployed into tomcat by 
+(a) copying it into the webapps/ directory of the Tomcat (and restarting Tomcat). 
+
+(b) issuing 'ant deploy' in the $ORCA_SRC/registry/ (there is a matching 'ant undeploy')
+
+The servlet will be available at http://hostname:8080/registry/ URL. All service methods should be invoked as registryService.methodName. For example a test method String getRegistryVersion() can be invoked as "registryService.getRegistryVersion". 
+
+Deployment/undeployment of the servlet webapp does not affect the persistent database state of the registry.
+
+The registry servlet has to be up an running and the URL of the server and the name of the actor insertion method have to be known to ORCA containers before they want to register their actors.
+
+Testing Servlet (sample client code):
+----------------
+You can build a simple test java client as follows:
+
+bash$ mvn -Ptest-client assembly:assembly
+
+The resulting $ORCA_SRC/registry/target/registry-jar-with-dependencies.jar can be executed (it assumes the servlet is running on http://localhost:8080/registry/) :
+
+bash$ java -cp target/registry-jar-with-dependencies.jar orca.registry.RegistryClient
+
+Also you can test from Python as follows:
+
+bash$ python
+[GCC 4.2.1 (Apple Inc. build 5646)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import xmlrpclib
+>>> proxy=xmlrpclib.ServerProxy("http://localhost:8080/registry/")
+>>> t = proxy.registryService.getRegistryVersion()
+>>> t
+'ORCA Actor Registry verion 1.0'
+
+Note on PHP scripts and webserver:
+----------------------------------
+
+There are a few php scripts - actors.php, sm.php, brokers.php and am.php, which connect to the mysql registry database and read data from the Actors table. These scripts know the db username, password and database name as the default ones - "registry", registry" and "ActorRegistry". They also assume that the webserver is running on the same machine that houses the mysql database. The webserver must be up and running. Basically httpd daemon needs to be running with php support. Check the relevant httpd.conf to enable php support. The php files have to be deployed to the web documents directory.
+
+On a OSX laptop, the php files need to be deployed at /Library/WebServer/Documents/ . Make sure that this directory has write permissions. Use 'sudo apachectl start' to start the apache webserver. The httpd.conf file is burried in /private/etc/apache2/httpd.conf . Uncomment "LoadModule php5_module..." to enable php support.
+
+
+Viewing Registry Contents:
+--------------------------
+
+The ORCA users have two options to view this registry.
+
+a.	Through a web interface - Users can use their browser to load php scripts that feed off the Mysql database to display the available actors. Users would go to http://<webserver_address>/actors.php. For an example, visit http://152.54.6.35/actors.php . They can also selectively view the brokers, SMs or AMs by loading brokers.php, sm.php or am.php respectively, instead of actors.php 
+
+b.	Through a programmatic interface using xml-rpc clients - Users can write xml-rpc clients that talk to the XML-RPC server directly. They can invoke the following methods: (i) registryService.getActors - to get information on all actors in the registry, (ii) registryService.getBrokers - to get information on brokers, (iii) registryService.getAMs - to get information on site authorities (AM), and (iv) registryService.getSMs - to get information on service managers (SM). None of these methods take any arguments. Example:
+
