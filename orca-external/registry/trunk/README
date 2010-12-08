@@ -11,9 +11,9 @@ registry.method=registryService.insert
 Registry Servlet:
 ----------------
 
-The Registry Servlet is an XML-RPC servlet that listens to invocations of actor registry calls from ORCA containers. It must be deployed inside Tomcat or Jetty or other container. A Mysql database storing actor data is attached to the XML-RPC server. The invocation of an actor registry method on the XML-RPC server results in an insertion into the database. For each actor, the following attributes are stored - (1) Actor Name, (2) Actor GUID, (3) Actor Type, (4) Actor Description, (5) Actor SOAPAxis2 url, (6) Actor class name, (7) Actor Policy, (8) Actor public key and (9) Actor certificate. The schema for the registry is stored in $ORCA_SRC/core/schema/mysql/registry.schema.sql
+The Registry Servlet is an XML-RPC servlet that listens to invocations of actor registry calls from ORCA containers. It must be deployed inside Tomcat or Jetty or other container. A Mysql database storing actor data is attached to the XML-RPC server. The invocation of an actor registry method on the XML-RPC server results in an insertion into the database. For each actor, the following attributes are stored - (2) Actor Name, (2) Actor GUID, (3) Actor Type, (4) Actor Description, (5) Actor SOAPAxis2 url, (6) Actor class name, (7) Actor Policy, (8) Actor public key, (9) Actor certificate, (10) Actor's abstract rdf and (11) Actor's full rdf. The schema for the registry is stored in src/main/resources/registry.schema.sql
  
-To set up the mysql registry database, create a user called "registry" with password "registry" and create a database with name "ActorRegistry". Inside this database create a table called "Actors". Use the schema in $ORCA_SRC/core/schema/mysql/registry.schema.sql. (To change the db username, password and database name, edit DatabaseOperations.java). 
+To set up the mysql registry database, create a user called "registry" with password "registry" and create a database with name "ActorRegistry". Inside this database create a table called "Actors". Use the schema in src/main/resources/registry.schema.sql. (To change the db username, password and database name, edit DatabaseOperations.java). 
 
 Once you have a user "registry" and a database "ActorRegistry", use the following to create the "Actors" table:
 
@@ -26,7 +26,7 @@ The resulting .war file in $ORCA_SRC/registry/target/ can be deployed into tomca
 
 (b) issuing 'ant deploy' in the $ORCA_SRC/registry/ (there is a matching 'ant undeploy')
 
-The servlet will be available at http://hostname:8080/registry/ URL. All service methods should be invoked as registryService.methodName. For example a test method String getRegistryVersion() can be invoked as "registryService.getRegistryVersion". 
+The servlet will be available at http://hostname:11080/registry/ URL. The file ant/build.properties should have the url - http://hostname and port number - 11080. All service methods should be invoked as registryService.methodName. For example a test method String getRegistryVersion() can be invoked as "registryService.getRegistryVersion". 
 
 Deployment/undeployment of the servlet webapp does not affect the persistent database state of the registry.
 
@@ -56,6 +56,8 @@ Type "help", "copyright", "credits" or "license" for more information.
 Note on PHP scripts and webserver:
 ----------------------------------
 
+*** NOTE: This interface is not used now; We use jsp to show the Registry contents***
+
 There are a few php scripts - actors.php, sm.php, brokers.php and am.php, which connect to the mysql registry database and read data from the Actors table. These scripts know the db username, password and database name as the default ones - "registry", registry" and "ActorRegistry". They also assume that the webserver is running on the same machine that houses the mysql database. The webserver must be up and running. Basically httpd daemon needs to be running with php support. Check the relevant httpd.conf to enable php support. The php files have to be deployed to the web documents directory.
 
 On a OSX laptop, the php files need to be deployed at /Library/WebServer/Documents/ . Make sure that this directory has write permissions. Use 'sudo apachectl start' to start the apache webserver. The httpd.conf file is burried in /private/etc/apache2/httpd.conf . Uncomment "LoadModule php5_module..." to enable php support.
@@ -66,7 +68,25 @@ Viewing Registry Contents:
 
 The ORCA users have two options to view this registry.
 
-a.	Through a web interface - Users can use their browser to load php scripts that feed off the Mysql database to display the available actors. Users would go to http://<webserver_address>/actors.php. For an example, visit http://152.54.6.35/actors.php . They can also selectively view the brokers, SMs or AMs by loading brokers.php, sm.php or am.php respectively, instead of actors.php 
+a.	Through a web interface - Users can use their browser to load jspscripts that feed off the Mysql database to display the available actors. Users would go to http://<webserver_address>:11080/registry/actors.php. For an example, visit http://geni.renci.org:11080/registry/actors.jsp . 
 
 b.	Through a programmatic interface using xml-rpc clients - Users can write xml-rpc clients that talk to the XML-RPC server directly. They can invoke the following methods: (i) registryService.getActors - to get information on all actors in the registry, (ii) registryService.getBrokers - to get information on brokers, (iii) registryService.getAMs - to get information on site authorities (AM), and (iv) registryService.getSMs - to get information on service managers (SM). None of these methods take any arguments. Example:
 
+
+Rules (time-out and security) for Actor Registry:
+-------------------------------------------------
+
+Liveness:
+
+From Bella 2.2 version, every actor that registers with the registry, sends heartbeats every minute to the registry to say that the actor is alive. This keeps updating the 'last_update' time in the database. Actors that are live would display in green in the web-browser view of the registry. Actors that were live within the last 12 hours, but are not ticking since 2 minutes, would display in red - which would mean a potentially dead actor. Actors which have stopped ticking in the last 12 hours would not be displayed in the web-browser view. All actors ever registered are stored in the database. Actors which register themselves using a "localhost" in their soapaxis2 url would be displayed in yellow. This implies that the actor is in test deployment mode and other actors should not connect to this actor. A programmatic query using the xml-rpc interface will return all live actors in production mode, meaning actors which have ticked in the last two minutes and don't have localhost in their soap url.
+
+Security:
+
+An actor entry can only be updated if the update request comes from a client whose IP matches with the IP in the soapaxis2 url of the registered actor; An update request for an actor having an already registered guid, but with a different soapaxis url would be rejected. Display of failed registration attempts is not implemented in this version.
+If the client IP matches, Actor data (like updated ndl files) can be updated any number of times. The timestamp of the row is changed to the new one.
+
+
+Logging:
+-------
+
+All logging is done using log4j. The server side logs for the registry should be available in logs/registry.log under tomcat.

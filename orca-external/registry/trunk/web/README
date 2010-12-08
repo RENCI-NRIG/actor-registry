@@ -1,3 +1,5 @@
+NOTE: Now this is obsolete. We use the jsp interface now.
+
 These are the php scripts that pull out information from a mysql database and display it on a browser.
 
 These have to be deployed in the apache deployment directory. For geni.renci.org place these in /var/www  . On a mac laptop, store these in /Library/WebServer/Documents

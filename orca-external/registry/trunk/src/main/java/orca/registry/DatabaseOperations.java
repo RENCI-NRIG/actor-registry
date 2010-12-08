@@ -15,6 +15,9 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
+import org.apache.log4j.Logger;
+import org.apache.log4j.Level;
+
 /**
  *
  * @author anirban
@@ -24,9 +27,12 @@ public class DatabaseOperations {
     private String userName = "registry";
     private String password = "registry";
     private String url = "jdbc:mysql://localhost:3306/ActorRegistry";
+    Logger log;
 
     public DatabaseOperations() {
-
+        log = Logger.getLogger(DatabaseOperations.class);
+        log.setLevel(Level.ALL);
+        log.info("Starting logging for Registry DatabaseOperations");
     }
 
 
@@ -35,21 +41,27 @@ public class DatabaseOperations {
        Connection conn = null;
 
        try{
-            
-            System.out.println("Trying to get a new instance");
+
+            log.info("Inside DatabaseOperations: connect()");
+            //System.out.println("Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: connect() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
-            System.out.println("Trying to get a database connection");
+            //System.out.println("Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: connect() - Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
-            System.out.println ("Database connection established");
+            //System.out.println ("Database connection established");
+            log.debug("Inside DatabaseOperations: connect() - Database connection established");
         }
         catch(Exception e){
-            System.err.println ("Cannot connect to database server");
+            //System.err.println ("Cannot connect to database server");
+            log.error("Cannot connect to database server");
         }
         finally{
             if (conn != null){
                 try{
                     conn.close ();
-                    System.out.println ("Database connection terminated");
+                    //System.out.println ("Database connection terminated");
+                    log.error("Database connection terminated");
                 }
                 catch (Exception e){ /* ignore close errors */
                 }
@@ -63,12 +75,16 @@ public class DatabaseOperations {
         Connection conn = null;
 
         try{
-            
-            System.out.println("Trying to get a new instance");
+
+            log.info("Inside DatabaseOperations: testQuery()");
+            //System.out.println("Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: testQuery() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
-            System.out.println("Trying to get a database connection");
+            //System.out.println("Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: testQuery() - Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
-            System.out.println ("Database connection established");
+            //System.out.println ("Database connection established");
+            log.debug("Inside DatabaseOperations: testQuery() - Database connection established");
 
             Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet srs = stmt.executeQuery("SELECT * FROM TestActors");
@@ -76,18 +92,21 @@ public class DatabaseOperations {
             while (srs.next()) {
                 String act_name = srs.getString("act_name");
                 String act_guid = srs.getString("act_guid");
-                System.out.println("Actor Name: " + act_name + " | Actor GUID: " + act_guid );
+                //System.out.println("Actor Name: " + act_name + " | Actor GUID: " + act_guid );
+                log.debug("Actor Name: " + act_name + " | Actor GUID: " + act_guid );
             }
 
         }
         catch(Exception e){
-            System.err.println ("Cannot query the database server");
+            //System.err.println ("Cannot query the database server");
+            log.error("Cannot query the database server");
         }
         finally{
             if (conn != null){
                 try{
                     conn.close ();
-                    System.out.println ("Database connection terminated");
+                    //System.out.println ("Database connection terminated");
+                    log.error("Database connection terminated");
                 }
                 catch (Exception e){ /* ignore close errors */
                 }
@@ -100,11 +119,11 @@ public class DatabaseOperations {
     public void insert(String act_name, String act_type, String act_guid, String act_desc, String act_soapaxis2url, String act_class, String act_mapper_class, String act_pubkey, String act_cert64){
 
 
+        log.info("Inside DatabaseOperations: insert() - inserting actors and their properties");
+        
         Connection conn = null;
 
-        try{
-            
-            
+        try{            
             // Query the Actors table to find out if act_guid already present
             // If act_guid already present, check if the ip address of the client 
             // matches the IP address returned by InetAddress.getByName(act_soapaxis2url - the extracted portion of soapaxis2url)
@@ -112,10 +131,12 @@ public class DatabaseOperations {
             // Set new timestamp for that row
             
             String clientIP = RegistryServlet.getClientIpAddress();
-            System.out.println("clientIP = " + clientIP);
+            //System.out.println("clientIP = " + clientIP);
+            log.debug("DatabaseOperations: insert() -  clientIP = " + clientIP);
 
             if(clientIP == null){
-                System.out.println("Can't get IP address of client; Insert failed");
+                //System.out.println("Can't get IP address of client; Insert failed");
+                log.error("DatabaseOperations: insert() -  Can't get IP address of client; Insert failed");
                 return;
             }
 
@@ -124,13 +145,15 @@ public class DatabaseOperations {
             String[] splitNoHttp = noHttp.split(":");
             String ipSoapUrl = splitNoHttp[0];
 
-            System.out.println("ipSoapUrl = " + ipSoapUrl);
+            //System.out.println("ip in SoapUrl = " + ipSoapUrl);
+            log.debug("DatabaseOperations: insert() -  ip in SoapUrl = " + ipSoapUrl);
 
             String humanReadableIP = null;
             String numericIP = null;
             try {
                 InetAddress address = InetAddress.getByName(ipSoapUrl);
-                System.out.println("humanreadable IP/numeric IP = " + address.toString());
+                //System.out.println("humanreadable IP/numeric IP = " + address.toString());
+                //log.debug("humanreadable IP/numeric IP = " + address.toString());
                 String[] splitResultGetByName = address.toString().split("/");
                 humanReadableIP = splitResultGetByName[0];
                 numericIP = splitResultGetByName[1];
@@ -150,18 +173,22 @@ public class DatabaseOperations {
                     act_production_deployment = "False";
                 }
                 else {
-                    System.out.println("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment. INSERT Failed !!!");
+                    //System.out.println("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment. INSERT Failed !!!");
+                    log.error("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment. INSERT Failed !!!");
                     return;
                 }
             }
 
             boolean actorExists = checkExistingGuid(act_guid);
 
-            System.out.println("Trying to get a new instance");
+            //System.out.println("Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: insert() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
-            System.out.println("Trying to get a database connection");
+            //System.out.println("Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: insert() - Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
-            System.out.println ("Database connection established");
+            //System.out.println ("Database connection established");
+            log.debug("Inside DatabaseOperations: insert() - Database connection established");
 
             Statement stmt = conn.createStatement();
 
@@ -186,13 +213,15 @@ public class DatabaseOperations {
             }
         }
         catch(Exception e){
-            System.err.println ("Error inserting into Actors table");
+            //System.err.println ("Error inserting into Actors table");
+            log.error("DatabaseOperations: insert() - Error inserting into Actors table");
         }
         finally{
             if (conn != null){
                 try{
                     conn.close ();
-                    System.out.println ("Database connection terminated");
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
                 }
                 catch (Exception e){ /* ignore close errors */
                 }
@@ -204,62 +233,39 @@ public class DatabaseOperations {
     // insert version for inserting abstract rdf, full rdf and allocatable units for existing actors
     public void insert(String act_guid, String act_abstract_rdf, String act_full_rdf, String act_allocatable_units){
 
+        log.info("Inside DatabaseOperations: insert() - inserting abstract rdf, full rdf and allocatable units");
+
         Connection conn = null;
 
         try{
 
             String clientIP = RegistryServlet.getClientIpAddress();
-            System.out.println("clientIP = " + clientIP);
+            //System.out.println("clientIP = " + clientIP);
+            log.debug("DatabaseOperations: insert() -  clientIP = " + clientIP);
 
             if(clientIP == null){
-                System.out.println("Can't get IP address of client; Insert failed");
+                //System.out.println("Can't get IP address of client; Insert failed");
+                log.error("DatabaseOperations: insert() - Can't get IP address of client; Insert failed");
                 return;
             }
 
             String act_soapaxis2url = getSoapAxis2Url(act_guid);
-
-            /*
-            String[] splitSoapUrl = act_soapaxis2url.split("//");
-            String noHttp = splitSoapUrl[1];
-            String[] splitNoHttp = noHttp.split(":");
-            String ipSoapUrl = splitNoHttp[0];
-
-            System.out.println("ip in input soapUrl = " + ipSoapUrl);
-
-            String humanReadableIP = null;
-            String numericIP = null;
-            try {
-                InetAddress address = InetAddress.getByName(ipSoapUrl);
-                System.out.println("humanreadable IP/numeric IP = " + address.toString());
-                String[] splitResultGetByName = address.toString().split("/");
-                humanReadableIP = splitResultGetByName[0];
-                numericIP = splitResultGetByName[1];
-            } catch (UnknownHostException ex) {
-                ex.printStackTrace();
+            if(act_soapaxis2url == null){
+                //System.out.println("Actor with guid: " + act_guid + " doesn't have a soapaxis2url");
+                log.error("DatabaseOperations: insert() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
+                return;
             }
-
-            boolean insertEntry = false;
-            if(clientIP.equalsIgnoreCase(numericIP)){
-                insertEntry = true;
-            }
-            else{
-                if(ipSoapUrl.equalsIgnoreCase("localhost")){ // Special check: if the soapaxis url is localhost (implying test deployment) insert it into db
-                    insertEntry = true;
-                }
-                else {
-                    System.out.println("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment");
-                    return;
-                }
-            }
-            */
 
             boolean insertEntry = checkIP(clientIP, act_soapaxis2url);
 
-            System.out.println("Trying to get a new instance");
+            //System.out.println("Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: insert() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
-            System.out.println("Trying to get a database connection");
+            //System.out.println("Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: insert() - Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
-            System.out.println ("Database connection established");
+            //System.out.println ("Database connection established");
+            log.debug("Inside DatabaseOperations: insert() - Database connection established");
 
             Statement stmt = conn.createStatement();
 
@@ -277,13 +283,15 @@ public class DatabaseOperations {
             
         }
         catch(Exception e){
-            System.err.println ("Error inserting Ndl into Actors table");
+            //System.err.println ("Error inserting Ndl into Actors table");
+            log.error("Inside DatabaseOperations: insert() - Exception while inserting Ndl into Actors table");
         }
         finally{
             if (conn != null){
                 try{
                     conn.close ();
-                    System.out.println ("Database connection terminated");
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
                 }
                 catch (Exception e){ /* ignore close errors */
                 }
@@ -295,30 +303,38 @@ public class DatabaseOperations {
     // insert version for inserting abstract rdf, full rdf for existing actors
     public void insert(String act_guid, String act_abstract_rdf, String act_full_rdf){
 
+        log.info("Inside DatabaseOperations: insert() - inserting abstract rdf and full rdf");
+
         Connection conn = null;
 
         try{
             String clientIP = RegistryServlet.getClientIpAddress();
-            System.out.println("clientIP = " + clientIP);
+            //System.out.println("clientIP = " + clientIP);
+            log.debug("DatabaseOperations: insert() -  clientIP = " + clientIP);
 
             if(clientIP == null){
-                System.out.println("Can't get IP address of client; Insert failed");
+                //System.out.println("Can't get IP address of client; Insert failed");
+                log.error("DatabaseOperations: insert() - Can't get IP address of client; Insert failed");
                 return;
             }
 
             String act_soapaxis2url = getSoapAxis2Url(act_guid);
             if(act_soapaxis2url == null){
-                System.out.println("Actor with guid: " + act_guid + " doesn't have a soapaxis2url");
+                //System.out.println("Actor with guid: " + act_guid + " doesn't have a soapaxis2url");
+                log.error("DatabaseOperations: insert() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
                 return;
             }
 
             boolean insertEntry = checkIP(clientIP, act_soapaxis2url);
 
-            System.out.println("Trying to get a new instance");
+            //System.out.println("Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: insert() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
-            System.out.println("Trying to get a database connection");
+            //System.out.println("Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: insert() - Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
-            System.out.println ("Database connection established");
+            //System.out.println ("Database connection established");
+            log.debug("Inside DatabaseOperations: insert() - Database connection established");
 
             Statement stmt = conn.createStatement();
 
@@ -336,13 +352,15 @@ public class DatabaseOperations {
 
         }
         catch(Exception e){
-            System.err.println ("Error inserting Ndl into Actors table");
+            //System.err.println ("Error inserting Ndl into Actors table");
+            log.error("Inside DatabaseOperations: insert() - Exception while inserting Ndl into Actors table");
         }
         finally{
             if (conn != null){
                 try{
                     conn.close ();
-                    System.out.println ("Database connection terminated");
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
                 }
                 catch (Exception e){ /* ignore close errors */
                 }
@@ -355,30 +373,38 @@ public class DatabaseOperations {
     // insert version for heartbeats; The method name is confusing; the semantic is to insert the most recent last update date for the actor
     public void insert(String act_guid){
 
+        log.info("Inside DatabaseOperations: insert() - inserting heartbeats");
+
         Connection conn = null;
 
         try{
             String clientIP = RegistryServlet.getClientIpAddress();
             //System.out.println("clientIP = " + clientIP);
+            log.debug("DatabaseOperations: insert() -  clientIP = " + clientIP);
 
             if(clientIP == null){
-                System.out.println("Can't get IP address of client; Insert failed");
+                //System.out.println("Can't get IP address of client; Insert failed");
+                log.error("DatabaseOperations: insert() - Can't get IP address of client; Insert failed");
                 return;
             }
 
             String act_soapaxis2url = getSoapAxis2Url(act_guid);
             if(act_soapaxis2url == null){
-                System.out.println("Actor with guid: " + act_guid + " doesn't have a soapaxis2url");
+                //System.out.println("Actor with guid: " + act_guid + " doesn't have a soapaxis2url");
+                log.error("DatabaseOperations: insert() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
                 return;
             }
 
             boolean insertEntry = checkIP(clientIP, act_soapaxis2url);
 
             //System.out.println("Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: insert() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
             //System.out.println("Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: insert() - Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
             //System.out.println ("Database connection established");
+            log.debug("Inside DatabaseOperations: insert() - Database connection established");
 
             Statement stmt = conn.createStatement();
 
@@ -394,13 +420,15 @@ public class DatabaseOperations {
 
         }
         catch(Exception e){
-            System.err.println ("Error inserting heartbeats");
+            //System.err.println ("Error inserting heartbeats");
+            log.error("Inside DatabaseOperations: insert() - Exception while inserting heartbeats");
         }
         finally{
             if (conn != null){
                 try{
                     conn.close ();
-                    System.out.println ("Database connection terminated");
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
                 }
                 catch (Exception e){ /* ignore close errors */
                 }
@@ -412,16 +440,21 @@ public class DatabaseOperations {
 
     public String query(String actorType){
 
+        log.info("Inside DatabaseOperations: query() - query for Actor of Type: " + actorType);
+
         String result = null;
         Connection conn = null;
 
         try{
             
-            System.out.println("Trying to get a new instance");
+            //System.out.println("Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: query() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
-            System.out.println("Trying to get a database connection");
+            //System.out.println("Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: query() - Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
-            System.out.println ("Database connection established");
+            //System.out.println ("Database connection established");
+            log.debug("Inside DatabaseOperations: query() - Database connection established");
 
             Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
 
@@ -480,7 +513,6 @@ public class DatabaseOperations {
                 long diffInSeconds = diff /(1000L); // difference in number of seconds
                 long diffInMinutes = diff / (1000L*60L); // difference in number of minutes
                 long diffInHours = diff / (1000L*60L*60L); // differenc in number of hours
-                System.out.println("The entry is " + diff + " milli secs / " + diffInMinutes + " minutes old");
 
                 String act_production_deployment = srs.getString("act_production_deployment");
 
@@ -504,7 +536,7 @@ public class DatabaseOperations {
 
                     output += " \n" ;
 
-                    System.out.println("Actor Name: " + act_name + " | Actor GUID: " + act_guid );
+                    //System.out.println("Actor Name: " + act_name + " | Actor GUID: " + act_guid );
                 }
 
 
@@ -518,13 +550,15 @@ public class DatabaseOperations {
 
         }
         catch(Exception e){
-            System.err.println ("Cannot query the database server");
+            //System.err.println ("Cannot query the database server");
+            log.error("Inside DatabaseOperations: query() - Exception while querying the database server");
         }
         finally{
             if (conn != null){
                 try{
                     conn.close ();
-                    System.out.println ("Database connection terminated");
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
                 }
                 catch (Exception e){ /* ignore close errors */
                 }
@@ -537,16 +571,18 @@ public class DatabaseOperations {
 
     private boolean checkExistingGuid(String input_act_guid){
 
+       log.info("Inside DatabaseOperations: checkExistingGuid()");
+
        Connection conn = null;
        boolean guidExists = false;
 
        try{
 
-            System.out.println("Trying to get a new instance");
+            //System.out.println("Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
-            System.out.println("Trying to get a database connection");
+            //System.out.println("Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
-            System.out.println ("Database connection established");
+            //System.out.println ("Database connection established");
 
             Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
 
@@ -554,14 +590,16 @@ public class DatabaseOperations {
             srs = stmt.executeQuery("SELECT * FROM Actors");
 
             if(srs == null){
-                System.out.println("Actors table is empty");
+                //System.out.println("Actors table is empty");
+                log.debug("DatabaseOperations: checkExistingGuid() - Actors table is empty");
                 return (false);
             }
 
             while (srs.next()) {
                 String act_guid = srs.getString("act_guid");
                 if(act_guid.equalsIgnoreCase(input_act_guid)){
-                    System.out.println("Actor with guid = " + input_act_guid + "  already exists");
+                    //System.out.println("Actor with guid = " + input_act_guid + "  already exists");
+                    log.debug("DatabaseOperations: checkExistingGuid() - Actor with guid = " + input_act_guid + "  already exists");
                     guidExists = true;
                 }
             }
@@ -569,13 +607,16 @@ public class DatabaseOperations {
 
         }
         catch(Exception e){
-            System.err.println ("Cannot connect to database server");
+            //System.err.println ("Cannot connect to database server");
+            log.error("DatabaseOperations: checkExistingGuid() - Cannot connect to database server");
+
         }
         finally{
             if (conn != null){
                 try{
                     conn.close ();
-                    System.out.println ("Database connection terminated");
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
                 }
                 catch (Exception e){ /* ignore close errors */
                 }
@@ -589,16 +630,18 @@ public class DatabaseOperations {
 
     private String getSoapAxis2Url(String input_act_guid){
 
+        log.info("Inside DatabaseOperations: getSoapAxis2Url()");
+
         String resSoapAxis2Url = null;
         Connection conn = null;
 
         try{
 
-            System.out.println("Trying to get a new instance");
+            //System.out.println("Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
-            System.out.println("Trying to get a database connection");
+            //System.out.println("Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
-            System.out.println ("Database connection established");
+            //System.out.println ("Database connection established");
 
             Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
 
@@ -606,7 +649,8 @@ public class DatabaseOperations {
             srs = stmt.executeQuery("SELECT * FROM Actors");
 
             if(srs == null){
-                System.out.println("Actors table is empty");
+                //System.out.println("Actors table is empty");
+                log.debug("DatabaseOperations: getSoapAxis2Url() - Actors table is empty");
                 return null;
             }
 
@@ -614,19 +658,22 @@ public class DatabaseOperations {
                 String act_guid = srs.getString("act_guid");
                 if(act_guid.equalsIgnoreCase(input_act_guid)){
                     resSoapAxis2Url = srs.getString("act_soapaxis2url");
-                    System.out.println("soapaxis2url from db = " + resSoapAxis2Url);
+                    //System.out.println("soapaxis2url from db = " + resSoapAxis2Url);
+                    log.debug("DatabaseOperations: getSoapAxis2Url() - soapaxis2url from db = " + resSoapAxis2Url);
                 }
             }
 
         }
         catch(Exception e){
-            System.err.println ("Cannot connect to database server");
+            //System.err.println ("Cannot connect to database server");
+            log.error("DatabaseOperations: getSoapAxis2Url() - Cannot connect to database server");
         }
         finally{
             if (conn != null){
                 try{
                     conn.close ();
-                    System.out.println ("Database connection terminated");
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
                 }
                 catch (Exception e){ /* ignore close errors */
                 }
@@ -639,18 +686,20 @@ public class DatabaseOperations {
 
     private boolean checkIP(String clientIP, String act_soapaxis2url){
 
+        log.info("Inside DatabaseOperations: checkIP()");
+
         String[] splitSoapUrl = act_soapaxis2url.split("//");
         String noHttp = splitSoapUrl[1];
         String[] splitNoHttp = noHttp.split(":");
         String ipSoapUrl = splitNoHttp[0];
 
-        System.out.println("ip in input soapUrl = " + ipSoapUrl);
+        //System.out.println("ip in input soapUrl = " + ipSoapUrl);
 
         String humanReadableIP = null;
         String numericIP = null;
         try {
             InetAddress address = InetAddress.getByName(ipSoapUrl);
-            System.out.println("humanreadable IP/numeric IP = " + address.toString());
+            //System.out.println("humanreadable IP/numeric IP = " + address.toString());
             String[] splitResultGetByName = address.toString().split("/");
             humanReadableIP = splitResultGetByName[0];
             numericIP = splitResultGetByName[1];
@@ -667,7 +716,8 @@ public class DatabaseOperations {
                 result = true;
             }
             else {
-                System.out.println("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment");
+                //System.out.println("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment");
+                log.debug("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment");
                 result = false;
             }
         }
