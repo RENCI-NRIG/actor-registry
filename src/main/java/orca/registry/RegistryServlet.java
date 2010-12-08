@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.Properties;
+import org.apache.log4j.PropertyConfigurator;
 
 public class RegistryServlet extends XmlRpcServlet{
 
@@ -16,10 +18,14 @@ public class RegistryServlet extends XmlRpcServlet{
   //private static final String CONTENT_TYPE = "application/octet-stream";
 
   private static ThreadLocal clientIpAddress = new ThreadLocal();
+  public static final String registryLogProperties="orca.registry.registry";
 
   public void init(ServletConfig config) throws ServletException
   {
     super.init(config);
+    ClassLoader loader = this.getClass().getClassLoader();
+    Properties p = PropertyLoader.loadProperties(registryLogProperties, loader);
+    PropertyConfigurator.configure(p);
   }
 
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException

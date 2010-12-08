@@ -33,10 +33,10 @@ margin-right: inherit;
 <tr BGCOLOR="#D2FFC4">
 <td align="center">Actor in production mode; Other actors can connect to this actor</td>
 </tr>
-<tr BGCOLOR="#FFB5B5">
+<tr BGCOLOR="#FFFF99">
 <td align="center">Actor in test mode, using localhost; Other actors can't connect to this actor</td>
 </tr>
-<tr BGCOLOR="#EEEEFF">
+<tr BGCOLOR="#FFB5B5">
 <td align="center">Actor not live; Other actors can't connect to this actor</td>
 </tr>
 </table>
@@ -164,14 +164,14 @@ java.sql.ResultSet srs=connection.createStatement().executeQuery("select * from 
 
                     if(diffInMinutes <= 2){ // live actors
                         if(act_production_deployment.equalsIgnoreCase("False")){ // Mark this row in red as a test deployment
-                            out.println("<tr BGCOLOR=\"#FFB5B5\">");
+                            out.println("<tr BGCOLOR=\"#FFFF99\">");
                         }
                         else{ // production deployment
                             out.println("<tr BGCOLOR=\"#D2FFC4\">");
                         }
                     }
                     else { // Potentially dead actor
-                        out.println("<tr BGCOLOR=\"#EEEEFF\">");
+                        out.println("<tr BGCOLOR=\"#FFB5B5\">");
                     }
 
                     out.println("<td align=\"center\">" + act_name + "</td>");
