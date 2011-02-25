@@ -187,8 +187,8 @@ java.sql.ResultSet srs=connection.createStatement().executeQuery("select * from 
                     out.println("<td align=\"center\">" + act_class + "</td>");
                     out.println("<td align=\"center\">" + act_mapper_class + "</td>");
                     //out.println("<td align=\"center\">" + "<a href=\"" + keyFileName + "\">Download Public Key</a></td>");
-                    out.println("<td align=\"center\">" + "<a href=\"http://geni-test.renci.org:11080/registry?showString=" + act_pubkey + "\">Click for Public Key</a></td>");
-                    out.println("<td align=\"center\">" + "<a href=\"http://geni-test.renci.org:11080/registry?showString=" + act_cert64 + "\">Click for Actor Certificate</a></td>");
+                    out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showString=" + act_pubkey + "\">Click for Public Key</a></td>");
+                    out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showString=" + act_cert64 + "\">Click for Actor Certificate</a></td>");
 
                     if(act_type.equalsIgnoreCase("3")){
                             if(act_abstract_rdf == null || act_full_rdf ==null){
@@ -196,8 +196,8 @@ java.sql.ResultSet srs=connection.createStatement().executeQuery("select * from 
                                     out.println("<td align=\"center\">" + "Not Available" + "</td>");
                             }
                             else {
-                                    out.println("<td align=\"center\">" + "<a href=\"http://geni-test.renci.org:11080/registry?showFile=" + abstractRdfFileNameShort + "\">Click for Abstract Site NDL</a></td>");
-                                    out.println("<td align=\"center\">" + "<a href=\"http://geni-test.renci.org:11080/registry?showFile=" + fullRdfFileNameShort + "\">Click for Full Site NDL</a></td>");
+                                    out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showFile=" + abstractRdfFileNameShort + "\">Click for Abstract Site NDL</a></td>");
+                                    out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showFile=" + fullRdfFileNameShort + "\">Click for Full Site NDL</a></td>");
                             }
                     }
                     else {
