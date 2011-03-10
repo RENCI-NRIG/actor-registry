@@ -1,4 +1,4 @@
-<%@ page import="java.io.*"  %>
+<%@ page import="java.io.*, java.net.*"  %>
 <html>
 <title>ORCA Actor Registry</title>
 <body>
@@ -97,7 +97,12 @@ java.sql.ResultSet srs=connection.createStatement().executeQuery("select * from 
                 String act_class = srs.getString("act_class");
                 String act_mapper_class = srs.getString("act_mapper_class");
                 String act_pubkey = srs.getString("act_pubkey");
+
+		String escaped_act_pubkey = URLEncoder.encode(act_pubkey);
+
                 String act_cert64 = srs.getString("act_cert64");
+
+		String escaped_act_cert64 = URLEncoder.encode(act_cert64);
 
                 String act_abstract_rdf = srs.getString("act_abstract_rdf");
                 String act_full_rdf = srs.getString("act_full_rdf");
@@ -187,8 +192,8 @@ java.sql.ResultSet srs=connection.createStatement().executeQuery("select * from 
                     out.println("<td align=\"center\">" + act_class + "</td>");
                     out.println("<td align=\"center\">" + act_mapper_class + "</td>");
                     //out.println("<td align=\"center\">" + "<a href=\"" + keyFileName + "\">Download Public Key</a></td>");
-                    out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showString=" + act_pubkey + "\">Click for Public Key</a></td>");
-                    out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showString=" + act_cert64 + "\">Click for Actor Certificate</a></td>");
+                    out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showString=" + escaped_act_pubkey + "\">Click for Public Key</a></td>");
+                    out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showString=" + escaped_act_cert64 + "\">Click for Actor Certificate</a></td>");
 
                     if(act_type.equalsIgnoreCase("3")){
                             if(act_abstract_rdf == null || act_full_rdf ==null){
