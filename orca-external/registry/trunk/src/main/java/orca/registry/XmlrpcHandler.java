@@ -5,9 +5,9 @@
 
 package orca.registry;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.util.Map;
 import java.util.Properties;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
@@ -115,6 +115,13 @@ public class XmlrpcHandler {
 
     }
 
+    public Map<String, Map<String, String>> getActorsMap() {
+        log.info("Inside XmlrpdHandler: getActorsMap()");
+
+        DatabaseOperations dbop = new DatabaseOperations();
+        return dbop.queryMap("actors");
+    }
+    
     public String getBrokers(){
 
         //System.out.println("Inside getBrokers()");
@@ -126,6 +133,13 @@ public class XmlrpcHandler {
 
         return result;
 
+    }
+    
+    public Map<String, Map<String, String>> getBrokersMap() {
+        log.info("Inside XmlrpdHandler: getBrokersMap()");
+
+        DatabaseOperations dbop = new DatabaseOperations();
+        return dbop.queryMap("brokers");
     }
 
     public String getSMs(){
@@ -141,6 +155,13 @@ public class XmlrpcHandler {
 
     }
 
+    public Map<String, Map<String, String>> getSMsMap() {
+        log.info("Inside XmlrpdHandler: getSMsMap()");
+
+        DatabaseOperations dbop = new DatabaseOperations();
+        return dbop.queryMap("sm");
+    }
+    
     public String getAMs(){
 
         //System.out.println("Inside getAMs()");
@@ -154,6 +175,13 @@ public class XmlrpcHandler {
 
     }
 
+    public Map<String, Map<String, String>> getAMsMap() {
+        log.info("Inside XmlrpdHandler: getAMsMap()");
+
+        DatabaseOperations dbop = new DatabaseOperations();
+        return dbop.queryMap("am");
+    }
+    
     public String getRegistryVersion() {
         /*
         String clientIP = RegistryServlet.getClientIpAddress();
