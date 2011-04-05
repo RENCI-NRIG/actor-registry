@@ -558,6 +558,13 @@ public class DatabaseOperations {
                 }
             }
         }
+        
+        if (result.size() > 1) 
+            result.put("STATUS", new HashMap<String, String>() {
+            	{
+            		put("STATUS", "OK");
+            	}
+            });
 
         return result;
     }
