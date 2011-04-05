@@ -14,9 +14,11 @@ import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.apache.log4j.Logger;
 import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 /**
  *
@@ -437,7 +439,126 @@ public class DatabaseOperations {
 
     }
 
+    /**
+     * Return information about actors as map indexed by actor name
+     */
+    public Map<String, Map<String, String>> queryMap(String actorType) {
+    	HashMap<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
 
+    	log.info("Inside DatabaseOperations: query() - query for Actor of Type: " + actorType);
+
+        Connection conn = null;
+
+        try{
+            
+            //System.out.println("Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: query() - Trying to get a new instance");
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            //System.out.println("Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: query() - Trying to get a database connection");
+            conn = DriverManager.getConnection (url, userName, password);
+            //System.out.println ("Database connection established");
+            log.debug("Inside DatabaseOperations: query() - Database connection established");
+
+            Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
+
+            result.put("STATUS", new HashMap<String, String>() {
+            	{
+            		put("STATUS", "No actors match the query");
+            	}
+            });
+            
+            ResultSet srs = null;
+            if(actorType.equalsIgnoreCase("actors")){
+                srs = stmt.executeQuery("SELECT * FROM Actors");
+            }
+            else if(actorType.equalsIgnoreCase("sm")){
+                srs = stmt.executeQuery("SELECT * FROM Actors where act_type=1");
+            }
+            else if(actorType.equalsIgnoreCase("brokers")){
+                srs = stmt.executeQuery("SELECT * FROM Actors where act_type=2");
+            }
+            else if(actorType.equalsIgnoreCase("am")){
+                srs = stmt.executeQuery("SELECT * FROM Actors where act_type=3");
+            }
+            else {
+                result.put("STATUS", new HashMap<String, String>() {
+                	{
+                		put("STATUS", "Unknown actor type");
+                	}
+                });
+            }
+
+            while (srs.next()) {
+            	HashMap<String, String> tmpMap = new HashMap<String, String>();
+            	tmpMap.put("NAME", srs.getString("act_name"));
+            	tmpMap.put("GUID", srs.getString("act_guid"));
+
+            	String act_type = srs.getString("act_type");
+                String actor_type = null;
+                if(act_type.equalsIgnoreCase("1")){
+                    actor_type = "SM";
+                }
+                if(act_type.equalsIgnoreCase("2")){
+                    actor_type = "BROKER";
+                }
+                if(act_type.equalsIgnoreCase("3")){
+                    actor_type = "AM";
+                }
+            	tmpMap.put("TYPE", actor_type);
+            	
+            	tmpMap.put("LOCATION", srs.getString("act_soapaxis2url"));
+            	tmpMap.put("CLASS", srs.getString("act_class"));
+            	tmpMap.put("MAPPERCLASS", srs.getString("act_mapper_class"));
+            	tmpMap.put("PUBKEY", srs.getString("act_pubkey"));
+            	tmpMap.put("CERT", srs.getString("act_cert64"));
+            	tmpMap.put("ABSRDF", srs.getString("act_abstract_rdf"));
+            	tmpMap.put("FULLRDF", srs.getString("act_full_rdf"));
+            	tmpMap.put("ALLOCUNITS", srs.getString("act_allocatable_units"));
+
+                String act_last_update = srs.getString("act_last_update");
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date lastUpdate = sdf.parse(act_last_update);
+                Calendar cal = Calendar.getInstance();
+                Date now = cal.getTime();
+
+                long diff = now.getTime() - lastUpdate.getTime(); // diff is in milliseconds
+                long diffInDays = diff / (1000L*60L*60L*24L); // difference in number of days
+                long diffInSeconds = diff /(1000L); // difference in number of seconds
+                long diffInMinutes = diff / (1000L*60L); // difference in number of minutes
+                long diffInHours = diff / (1000L*60L*60L); // differenc in number of hours
+
+                String act_production_deployment = srs.getString("act_production_deployment");
+
+                if((diffInMinutes <= 2) && act_production_deployment.equalsIgnoreCase("True")){ // the entry is less than 2 minutes old and it is an entry with production deployment (!localhost)
+                	result.put(srs.getString("act_guid"), tmpMap);
+                }
+            }
+        }
+        catch(Exception e){
+            //System.err.println ("Cannot query the database server");
+            log.error("Inside DatabaseOperations: query() - Exception while querying the database server");
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Return information about actors as string
+     * @param actorType
+     * @return
+     */
     public String query(String actorType){
 
         log.info("Inside DatabaseOperations: query() - query for Actor of Type: " + actorType);
