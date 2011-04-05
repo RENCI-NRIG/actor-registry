@@ -9,7 +9,7 @@
         <servlet-class>orca.registry.RegistryServlet</servlet-class>
         <init-param>
           <param-name>enabledForExtensions</param-name>
-          <param-value>true</param-value>
+          <param-value>false</param-value>
           <description>
             Sets, whether the servlet supports vendor extensions for XML-RPC.
           </description>
