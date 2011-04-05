@@ -439,10 +439,18 @@ public class DatabaseOperations {
 
     }
 
+    // make sure no null keys or values are inserted
+    private void nonNullMapPut(Map<String, String> m, String key, String val) {
+    	if ((key == null) || (val == null))
+    		return;
+    	m.put(key, val);
+    }
+    
     /**
      * Return information about actors as map indexed by actor name
      */
     public Map<String, Map<String, String>> queryMap(String actorType) {
+    	
     	HashMap<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
 
     	log.info("Inside DatabaseOperations: query() - query for Actor of Type: " + actorType);
@@ -491,8 +499,8 @@ public class DatabaseOperations {
 
             while (srs.next()) {
             	HashMap<String, String> tmpMap = new HashMap<String, String>();
-            	tmpMap.put("NAME", srs.getString("act_name"));
-            	tmpMap.put("GUID", srs.getString("act_guid"));
+            	nonNullMapPut(tmpMap, "NAME", srs.getString("act_name"));
+            	nonNullMapPut(tmpMap, "GUID", srs.getString("act_guid"));
 
             	String act_type = srs.getString("act_type");
                 String actor_type = null;
@@ -505,16 +513,16 @@ public class DatabaseOperations {
                 if(act_type.equalsIgnoreCase("3")){
                     actor_type = "AM";
                 }
-            	tmpMap.put("TYPE", actor_type);
+            	nonNullMapPut(tmpMap, "TYPE", actor_type);
             	
-            	tmpMap.put("LOCATION", srs.getString("act_soapaxis2url"));
-            	tmpMap.put("CLASS", srs.getString("act_class"));
-            	tmpMap.put("MAPPERCLASS", srs.getString("act_mapper_class"));
-            	tmpMap.put("PUBKEY", srs.getString("act_pubkey"));
-            	tmpMap.put("CERT", srs.getString("act_cert64"));
-            	tmpMap.put("ABSRDF", srs.getString("act_abstract_rdf"));
-            	tmpMap.put("FULLRDF", srs.getString("act_full_rdf"));
-            	tmpMap.put("ALLOCUNITS", srs.getString("act_allocatable_units"));
+            	nonNullMapPut(tmpMap, "LOCATION", srs.getString("act_soapaxis2url"));
+            	nonNullMapPut(tmpMap, "CLASS", srs.getString("act_class"));
+            	nonNullMapPut(tmpMap, "MAPPERCLASS", srs.getString("act_mapper_class"));
+            	nonNullMapPut(tmpMap, "PUBKEY", srs.getString("act_pubkey"));
+            	nonNullMapPut(tmpMap, "CERT", srs.getString("act_cert64"));
+            	nonNullMapPut(tmpMap, "ABSRDF", srs.getString("act_abstract_rdf"));
+            	nonNullMapPut(tmpMap, "FULLRDF", srs.getString("act_full_rdf"));
+            	nonNullMapPut(tmpMap, "ALLOCUNITS", srs.getString("act_allocatable_units"));
 
                 String act_last_update = srs.getString("act_last_update");
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -537,7 +545,7 @@ public class DatabaseOperations {
         }
         catch(Exception e){
             //System.err.println ("Cannot query the database server");
-            log.error("Inside DatabaseOperations: query() - Exception while querying the database server");
+            log.error("Inside DatabaseOperations: query() - Exception while querying the database server: " + e.toString());
         }
         finally{
             if (conn != null){
