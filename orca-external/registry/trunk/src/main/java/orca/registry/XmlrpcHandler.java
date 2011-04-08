@@ -5,6 +5,7 @@
 
 package orca.registry;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -18,7 +19,8 @@ import org.apache.log4j.PropertyConfigurator;
  */
 public class XmlrpcHandler {
 
-    public static final String registryLogProperties="orca.registry.registry";
+    private static final String ORCA_ACTOR_REGISTRY_VERSION = "ORCA Actor Registry version 1.1 ";
+	public static final String registryLogProperties="orca.registry.registry";
     Logger log;
 
     public XmlrpcHandler() {
@@ -32,7 +34,11 @@ public class XmlrpcHandler {
 
     }
 
-    public String connect(){
+    /**
+     * 
+     * @return
+     */
+    protected String connect(){
         String result = "done connecting";
         //System.out.println("Inside connect");
         log.info("Inside XmlrpcHandler: connect()");
@@ -41,7 +47,19 @@ public class XmlrpcHandler {
         return result;
     }
 
-    // insert version for inserting the actors and their properties
+    /** insert version for inserting the actors and their properties
+     * 
+     * @param act_name
+     * @param act_type
+     * @param act_guid
+     * @param act_desc
+     * @param act_soapaxis2url
+     * @param act_class
+     * @param act_mapper_class
+     * @param act_pubkey
+     * @param act_cert64
+     * @return
+     */
     public String insert(String act_name, String act_type, String act_guid, String act_desc, String act_soapaxis2url, String act_class, String act_mapper_class, String act_pubkey, String act_cert64){
 
         log.info("Inside XmlrpcHandler: insert() - insert actors and properties");
@@ -56,7 +74,14 @@ public class XmlrpcHandler {
 
     }
 
-    // insert version for inserting abstract rdf, full rdf and allocatable units for existing actors
+    /** insert version for inserting abstract rdf, full rdf and allocatable units for existing actors
+     * 
+     * @param act_guid
+     * @param act_abstract_rdf
+     * @param act_full_rdf
+     * @param act_allocatable_units
+     * @return
+     */
     public String insert(String act_guid, String act_abstract_rdf, String act_full_rdf, String act_allocatable_units){
 
         log.info("Inside XmlrpcHandler: insert() - insert abstract rdf, full rdf, allocatable units");
@@ -71,7 +96,13 @@ public class XmlrpcHandler {
 
     }
 
-    // insert version for inserting abstract rdf, full rdf for existing actors
+    /** insert version for inserting abstract rdf, full rdf for existing actors
+     * 
+     * @param act_guid
+     * @param act_abstract_rdf
+     * @param act_full_rdf
+     * @return
+     */
     public String insert(String act_guid, String act_abstract_rdf, String act_full_rdf){
 
         log.info("Inside XmlrpcHandler: insert() - insert abstract rdf, full rdf");
@@ -86,7 +117,11 @@ public class XmlrpcHandler {
 
     }
 
-    // insert version to insert periodic heartbeats, which change the last update date for an actor
+    /** insert version to insert periodic heartbeats, which change the last update date for an actor
+     * 
+     * @param act_guid
+     * @return
+     */
     public String insert(String act_guid){
 
         //System.out.println("Inside insert Heartbeats");
@@ -102,6 +137,10 @@ public class XmlrpcHandler {
         
     }
 
+    /**
+     * Return a string with information on all actors
+     * @return
+     */
     public String getActors(){
 
         log.info("Inside XmlrpdHandler: getActors()");
@@ -115,13 +154,38 @@ public class XmlrpcHandler {
 
     }
 
-    public Map<String, Map<String, String>> getActorsMap() {
+    /**
+     * Return a map of all known actors indexed by GUID. 
+     * @return
+     */
+    public Map<String, Map<String, String>> getActorsMap(boolean essentialOnly) {
         log.info("Inside XmlrpdHandler: getActorsMap()");
 
         DatabaseOperations dbop = new DatabaseOperations();
-        return dbop.queryMap("actors");
+        return dbop.queryMap("actors", essentialOnly);
     }
     
+    /**
+     * return a map on actors other than those listed indexed by GUID. 
+     * @param guids
+     * @return
+     */
+    public Map<String, Map<String, String>> getActorsOtherThan(List<String> guids, boolean essentialOnly) {
+    	DatabaseOperations dbop = new DatabaseOperations();
+    	
+    	Map<String, Map<String, String>> res = dbop.queryMap("actors", essentialOnly);
+    	
+    	// filter out known guids
+    	for(String g: guids) 
+    		res.remove(g);
+    	
+    	return res;
+    }
+    
+    /**
+     * Return a string containing information on all brokers
+     * @return
+     */
     public String getBrokers(){
 
         //System.out.println("Inside getBrokers()");
@@ -135,13 +199,21 @@ public class XmlrpcHandler {
 
     }
     
-    public Map<String, Map<String, String>> getBrokersMap() {
+    /**
+     * Return a map containing information on all brokers indexed by GUID.  
+     * @return
+     */
+    public Map<String, Map<String, String>> getBrokersMap(boolean essentialOnly) {
         log.info("Inside XmlrpdHandler: getBrokersMap()");
 
         DatabaseOperations dbop = new DatabaseOperations();
-        return dbop.queryMap("brokers");
+        return dbop.queryMap("brokers", essentialOnly);
     }
 
+    /**
+     * Return a string containing information on all SMs
+     * @return
+     */
     public String getSMs(){
 
         //System.out.println("Inside getSMs()");
@@ -155,13 +227,22 @@ public class XmlrpcHandler {
 
     }
 
-    public Map<String, Map<String, String>> getSMsMap() {
+    /**
+     * Return a map containing information on all SMs indexed by GUID. 
+     * is returned
+     * @return
+     */
+    public Map<String, Map<String, String>> getSMsMap(boolean essentialOnly) {
         log.info("Inside XmlrpdHandler: getSMsMap()");
 
         DatabaseOperations dbop = new DatabaseOperations();
-        return dbop.queryMap("sm");
+        return dbop.queryMap("sm", essentialOnly);
     }
     
+    /**
+     * Return a string containing information on all AMs
+     * @return
+     */
     public String getAMs(){
 
         //System.out.println("Inside getAMs()");
@@ -175,13 +256,21 @@ public class XmlrpcHandler {
 
     }
 
-    public Map<String, Map<String, String>> getAMsMap() {
+    /** Return a map of all AMs indexed by GUID. 
+     * 
+     * @return
+     */
+    public Map<String, Map<String, String>> getAMsMap(boolean essentialOnly) {
         log.info("Inside XmlrpdHandler: getAMsMap()");
 
         DatabaseOperations dbop = new DatabaseOperations();
-        return dbop.queryMap("am");
+        return dbop.queryMap("am", essentialOnly);
     }
     
+    /**
+     * Get registry version
+     * @return
+     */
     public String getRegistryVersion() {
         /*
         String clientIP = RegistryServlet.getClientIpAddress();
@@ -197,7 +286,7 @@ public class XmlrpcHandler {
             ex.printStackTrace();
         }
         */
-	return "ORCA Actor Registry version 1.0 ";
+	return ORCA_ACTOR_REGISTRY_VERSION;
     }
 
     public String getRegistryVersion(String v){

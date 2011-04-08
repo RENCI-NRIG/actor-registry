@@ -26,7 +26,21 @@ import org.apache.log4j.Logger;
  */
 public class DatabaseOperations {
 
-    private String userName = "registry";
+    private static final String SOAPAXIS2_PROTOCOL = "soapaxis2";
+	private static final String ActorAllocunits = "ALLOCUNITS";
+	private static final String ActorFullRDF = "FULLRDF";
+	private static final String ActorAbstractRDF = "ABSRDF";
+	private static final String ActorCert64 = "CERT";
+	private static final String ActorPubkey = "PUBKEY";
+	private static final String ActorMapperclass = "MAPPERCLASS";
+	private static final String ActorClazz = "CLASS";
+	private static final String ActorLocation = "LOCATION";
+	private static final String ActorProtocol = "PROTOCOL";
+	private static final String ActorType = "TYPE";
+	private static final String ActorGuid = "GUID";
+	private static final String ActorName = "NAME";
+	
+	private String userName = "registry";
     private String password = "registry";
     private String url = "jdbc:mysql://localhost:3306/ActorRegistry";
     Logger log;
@@ -446,10 +460,14 @@ public class DatabaseOperations {
     	m.put(key, val);
     }
     
-    /**
-     * Return information about actors as map indexed by actor name
-     */
-    public Map<String, Map<String, String>> queryMap(String actorType) {
+	/**
+	 * Return information about actors as map indexed by actor name. If essential only set, don't
+	 * return RDFs
+	 * @param actorType
+	 * @param essentialOnly
+	 * @return
+	 */
+    public Map<String, Map<String, String>> queryMap(String actorType, boolean essentialOnly) {
     	
     	HashMap<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
 
@@ -499,30 +517,35 @@ public class DatabaseOperations {
 
             while (srs.next()) {
             	HashMap<String, String> tmpMap = new HashMap<String, String>();
-            	nonNullMapPut(tmpMap, "NAME", srs.getString("act_name"));
-            	nonNullMapPut(tmpMap, "GUID", srs.getString("act_guid"));
+            	nonNullMapPut(tmpMap, ActorName, srs.getString("act_name"));
+            	nonNullMapPut(tmpMap, ActorGuid, srs.getString("act_guid"));
 
             	String act_type = srs.getString("act_type");
                 String actor_type = null;
+                // These names match ConfigurationProcessor definitions in ORCA
                 if(act_type.equalsIgnoreCase("1")){
-                    actor_type = "SM";
+                    actor_type = "sm";
                 }
                 if(act_type.equalsIgnoreCase("2")){
-                    actor_type = "BROKER";
+                    actor_type = "broker";
                 }
                 if(act_type.equalsIgnoreCase("3")){
-                    actor_type = "AM";
+                    actor_type = "site";
                 }
-            	nonNullMapPut(tmpMap, "TYPE", actor_type);
+            	nonNullMapPut(tmpMap, ActorType, actor_type);
             	
-            	nonNullMapPut(tmpMap, "LOCATION", srs.getString("act_soapaxis2url"));
-            	nonNullMapPut(tmpMap, "CLASS", srs.getString("act_class"));
-            	nonNullMapPut(tmpMap, "MAPPERCLASS", srs.getString("act_mapper_class"));
-            	nonNullMapPut(tmpMap, "PUBKEY", srs.getString("act_pubkey"));
-            	nonNullMapPut(tmpMap, "CERT", srs.getString("act_cert64"));
-            	nonNullMapPut(tmpMap, "ABSRDF", srs.getString("act_abstract_rdf"));
-            	nonNullMapPut(tmpMap, "FULLRDF", srs.getString("act_full_rdf"));
-            	nonNullMapPut(tmpMap, "ALLOCUNITS", srs.getString("act_allocatable_units"));
+            	nonNullMapPut(tmpMap, ActorLocation, srs.getString("act_soapaxis2url"));
+            	nonNullMapPut(tmpMap, ActorPubkey, srs.getString("act_pubkey"));
+            	nonNullMapPut(tmpMap, ActorCert64, srs.getString("act_cert64"));
+            	if (!essentialOnly) {
+            		nonNullMapPut(tmpMap, ActorFullRDF, srs.getString("act_full_rdf"));
+            		nonNullMapPut(tmpMap, ActorAllocunits, srs.getString("act_allocatable_units"));
+                	nonNullMapPut(tmpMap, ActorAbstractRDF, srs.getString("act_abstract_rdf"));
+                	nonNullMapPut(tmpMap, ActorClazz, srs.getString("act_class"));
+                	nonNullMapPut(tmpMap, ActorMapperclass, srs.getString("act_mapper_class"));
+            	}
+            	// FIXME: hard code protocol for now
+            	nonNullMapPut(tmpMap, ActorProtocol, SOAPAXIS2_PROTOCOL);
 
                 String act_last_update = srs.getString("act_last_update");
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
