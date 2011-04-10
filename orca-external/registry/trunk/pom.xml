@@ -43,8 +43,8 @@
 		</dependency>
 
 		<dependency>
-			<groupId>mysql-connector</groupId>
-			<artifactId>mysql-connector</artifactId>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
 			<version>5.0.4</version>
 		</dependency>
 		<dependency>
