@@ -1,0 +1,19 @@
+<!-- note that if self-signed or other private certificates
+are used by the ldap server, its certificate chain needs to be
+imported into some keystore and tomcat's CATALINA_OPTS need to
+include -Djavax.net.ssl.trustStore=/some/path/tomcat.jks 
+-Djavax.net.ssl.trustStorePassword=somepassword
+-->
+<Context path="/registry" reloadable="false">
+
+<Realm
+	debug="99"
+	className="org.apache.catalina.realm.JNDIRealm"
+	connectionURL="ldap://ldap.ben.renci.org:389/"
+	alternateURL="ldaps://ldap.ben.renci.org:636/"
+	userPattern="uid={0},ou=People,dc=ben,dc=renci,dc=org"
+	roleBase="ou=PosixGroups,dc=ben,dc=renci,dc=org"
+	roleName="cn"
+	roleSearch="(memberUid={1})"
+	/>
+</Context>

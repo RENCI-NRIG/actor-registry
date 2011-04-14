@@ -19,4 +19,25 @@
         <servlet-name>registry</servlet-name>
         <url-pattern>/</url-pattern>
     </servlet-mapping>
+
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Secure Elements</web-resource-name>
+      <url-pattern>/secure/*</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>goadmins</role-name>
+    </auth-constraint>
+  </security-constraint>
+
+  <!-- Form-based authentication -->
+  <login-config>
+    <auth-method>FORM</auth-method>
+    <realm-name>ORCA Actor Registry</realm-name>
+    <form-login-config>
+      <form-login-page>/login.jsp</form-login-page>
+      <form-error-page>/error.jsp</form-error-page>
+    </form-login-config>
+  </login-config>
+
 </web-app>
