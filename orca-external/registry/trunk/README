@@ -90,3 +90,11 @@ Logging:
 -------
 
 All logging is done using log4j. The server side logs for the registry should be available in logs/registry.log under tomcat.
+
+
+Authentication:
+-------
+
+Registry view is open to all users, however approval of actor entries requires authentication. By default LDAP is used (see src/main/webapp/META-INF/context.xml) and container-based security is used to gain access to jsp pages requiring authorization. Also see src/main/webapp/WEB-INF/web.xml.
+
+Note that connecting to an LDAP server may require SSL, and if the certificate is self-signed or its trust root is not known to JAVA, you need to import the certificate chain (starting from LDAP server) into a java keystore and then make the keystore known to Tomcat by adding -Djavax.net.ssl.trustStore=/path/to/keystore -Djavax.net.ssl.trustStorePassword=somepassword to CATALINA_OPTS in start.sh
