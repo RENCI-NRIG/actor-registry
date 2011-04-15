@@ -7,7 +7,10 @@
         <table border="0" cellspacing="5">
           <tr>
             <td height="50">
-              Please log in.
+	    <center>
+              <h2>Please log in. </h2>
+	      <h3><a href="http://ben.renci.org">BEN</a> LDAP Credentials required.</h3>
+	    </center>
             </td>
           </tr>
 
