@@ -3,6 +3,10 @@ are used by the ldap server, its certificate chain needs to be
 imported into some keystore and tomcat's CATALINA_OPTS need to
 include -Djavax.net.ssl.trustStore=/some/path/tomcat.jks 
 -Djavax.net.ssl.trustStorePassword=somepassword
+
+Note that other Realm implementations exist (XML files, PAM and
+others) that can be easily substituted here without affecting the
+app.
 -->
 <Context path="/registry" reloadable="false">
 

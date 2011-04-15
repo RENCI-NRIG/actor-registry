@@ -9,16 +9,20 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
 /**
  *
@@ -26,29 +30,55 @@ import org.apache.log4j.Logger;
  */
 public class DatabaseOperations {
 
-    private static final String SOAPAXIS2_PROTOCOL = "soapaxis2";
-	private static final String ActorAllocunits = "ALLOCUNITS";
-	private static final String ActorFullRDF = "FULLRDF";
-	private static final String ActorAbstractRDF = "ABSRDF";
-	private static final String ActorCert64 = "CERT";
-	private static final String ActorPubkey = "PUBKEY";
-	private static final String ActorMapperclass = "MAPPERCLASS";
-	private static final String ActorClazz = "CLASS";
-	private static final String ActorLocation = "LOCATION";
-	private static final String ActorProtocol = "PROTOCOL";
-	private static final String ActorType = "TYPE";
-	private static final String ActorGuid = "GUID";
-	private static final String ActorName = "NAME";
+    private static final String STATUS_SUCCESS = "STATUS: SUCCESS";
+	private static final String REGISTRY_DB_URL = "registry.dbUrl";
+	private static final String REGISTRY_PASSWORD = "registry.password";
+	private static final String REGISTRY_USERNAME = "registry.username";
+	private static final String TRUE_STRING = "True";
+	private static final String FALSE_STRING = "False";
+	public static final String QUERY_AMS = "ams";
+	public static final String QUERY_BROKERS = "brokers";
+	public static final String QUERY_SMS = "sms";
+	public static final String QUERY_ACTORS_VERIFIED = "actors_verified";
+	public static final String QUERY_ACTORS = "actors";
+    
+	private static final String SOAPAXIS2_PROTOCOL = "soapaxis2";
+	
+	public static final String ActorAllocunits = "ALLOCUNITS";
+	public static final String ActorFullRDF = "FULLRDF";
+	public static final String ActorAbstractRDF = "ABSRDF";
+	public static final String ActorCert64 = "CERT";
+	public static final String ActorPubkey = "PUBKEY";
+	public static final String ActorMapperclass = "MAPPERCLASS";
+	public static final String ActorClazz = "CLASS";
+	public static final String ActorLocation = "LOCATION";
+	public static final String ActorProtocol = "PROTOCOL";
+	public static final String ActorType = "TYPE";
+	public static final String ActorGuid = "GUID";
+	public static final String ActorName = "NAME";
+	public static final String ActorDesc = "DESC";
+	public static final String ActorLastUpdate = "LASTUPDATE";
+	public static final String ActorProduction = "PRODUCTION";
+	public static final String ActorVerified = "VERIFIED";
 	
 	private String userName = "registry";
     private String password = "registry";
     private String url = "jdbc:mysql://localhost:3306/ActorRegistry";
     Logger log;
 
-    public DatabaseOperations() {
+    public DatabaseOperations()  {
         log = Logger.getLogger(DatabaseOperations.class);
-        log.setLevel(Level.ALL);
-        log.info("Starting logging for Registry DatabaseOperations");
+        log.debug("Starting logging for Registry DatabaseOperations");
+        ClassLoader loader = this.getClass().getClassLoader();
+        Properties p = PropertyLoader.loadProperties(XmlrpcHandler.registryLogProperties, loader);
+        PropertyConfigurator.configure(p);
+        
+        if (p.getProperty(REGISTRY_USERNAME) != null)
+        	userName=p.getProperty(REGISTRY_USERNAME);
+        if (p.getProperty(REGISTRY_PASSWORD) != null)
+        	password=p.getProperty(REGISTRY_PASSWORD);
+        if (p.getProperty(REGISTRY_DB_URL) != null)
+        	url=p.getProperty(REGISTRY_DB_URL);
     }
 
 
@@ -57,8 +87,7 @@ public class DatabaseOperations {
        Connection conn = null;
 
        try{
-
-            log.info("Inside DatabaseOperations: connect()");
+            log.debug("Inside DatabaseOperations: connect()");
             //System.out.println("Trying to get a new instance");
             log.debug("Inside DatabaseOperations: connect() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
@@ -92,7 +121,7 @@ public class DatabaseOperations {
 
         try{
 
-            log.info("Inside DatabaseOperations: testQuery()");
+            log.debug("Inside DatabaseOperations: testQuery()");
             //System.out.println("Trying to get a new instance");
             log.debug("Inside DatabaseOperations: testQuery() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
@@ -131,12 +160,31 @@ public class DatabaseOperations {
 
     }
 
-    // insert version for inserting the actors and their properties
-    public void insert(String act_name, String act_type, String act_guid, String act_desc, String act_soapaxis2url, String act_class, String act_mapper_class, String act_pubkey, String act_cert64){
+    /**
+     *  insert version for inserting the actors and their properties
+     * @param act_name
+     * @param act_type
+     * @param act_guid
+     * @param act_desc
+     * @param act_soapaxis2url
+     * @param act_class
+     * @param act_mapper_class
+     * @param act_pubkey
+     * @param act_cert64
+     */
+    public String insert(String act_name, String act_type, String act_guid, String act_desc, String act_soapaxis2url, String act_class, String act_mapper_class, String act_pubkey, String act_cert64){
 
-
-        log.info("Inside DatabaseOperations: insert() - inserting actors and their properties");
-        
+    	if ((act_name == null) || (act_type == null) || (act_guid == null) || 
+    			(act_soapaxis2url == null) || (act_class == null) || (act_mapper_class == null) ||
+    			(act_pubkey == null) || (act_cert64 == null))
+    		return "STATUS: ERROR; invalid insert parameters";
+    			
+    	if (act_desc == null) {
+    		act_desc = "No description";
+    	}
+    	
+        log.debug("Inside DatabaseOperations: insert() - inserting actors and their properties");
+        String status = STATUS_SUCCESS;
         Connection conn = null;
 
         try{            
@@ -153,7 +201,7 @@ public class DatabaseOperations {
             if(clientIP == null){
                 //System.out.println("Can't get IP address of client; Insert failed");
                 log.error("DatabaseOperations: insert() -  Can't get IP address of client; Insert failed");
-                return;
+                return "STATUS: ERROR; Can't get IP address of client; Insert failed";
             }
 
             String[] splitSoapUrl = act_soapaxis2url.split("//");
@@ -175,23 +223,24 @@ public class DatabaseOperations {
                 numericIP = splitResultGetByName[1];
             } catch (UnknownHostException ex) {
                 ex.printStackTrace();
+            	return "STATUS: ERROR; Exception encountered";
             }
 
             boolean insertEntry = false;
-            String act_production_deployment = "False";
+            String act_production_deployment = FALSE_STRING;
             if(clientIP.equalsIgnoreCase(numericIP)){
                 insertEntry = true;
-                act_production_deployment = "True";
+                act_production_deployment = TRUE_STRING;
             }
             else{
                 if(ipSoapUrl.equalsIgnoreCase("localhost")){ // Special check: if the soapaxis url is localhost (implying test deployment) set production deployment as false
                     insertEntry = true;
-                    act_production_deployment = "False";
+                    act_production_deployment = FALSE_STRING;
                 }
                 else {
                     //System.out.println("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment. INSERT Failed !!!");
                     log.error("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment. INSERT Failed !!!");
-                    return;
+                    return "STATUS: ERROR; Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor;";
                 }
             }
 
@@ -206,31 +255,59 @@ public class DatabaseOperations {
             //System.out.println ("Database connection established");
             log.debug("Inside DatabaseOperations: insert() - Database connection established");
 
-            Statement stmt = conn.createStatement();
-
+            Calendar cal = Calendar.getInstance();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String act_last_update = sdf.format(cal.getTime());
+            
             if(insertEntry){ // valid client trying to insert new entry or trying to update an existing entry
 
-                Calendar cal = Calendar.getInstance();
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                String act_last_update = sdf.format(cal.getTime());
-
-                int res;
-                if(!actorExists){ // New actor
-                    res = stmt.executeUpdate("INSERT into `Actors` ( `act_name` , `act_guid` , `act_type`, `act_desc`, `act_soapaxis2url`, `act_class`, `act_mapper_class`, `act_pubkey`, `act_cert64`, `act_production_deployment`, `act_last_update`) values " +
-                                             "('" + act_name + "', '" + act_guid + "', '" + act_type + "' , '" + act_desc + "', '" + act_soapaxis2url + "', '" + act_class + "', '" + act_mapper_class + "', '" + act_pubkey + "', '" + act_cert64 + "', '" + act_production_deployment + "', '" + act_last_update +  "')");
+                if(!actorExists) { // New actor
+                	PreparedStatement pStat = conn.prepareStatement("INSERT into `Actors` ( `act_name` , `act_guid` , `act_type`, `act_desc`, `act_soapaxis2url`, `act_class`, `act_mapper_class`, `act_pubkey`, `act_cert64`, `act_production_deployment`, `act_last_update`, `act_verified`) values " +
+                			 "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                	pStat.setString(1, act_name);
+                	pStat.setString(2, act_guid);
+                	pStat.setString(3, act_type);
+                	pStat.setString(4, act_desc);
+                	pStat.setString(5, act_soapaxis2url);
+                	pStat.setString(6, act_class);
+                	pStat.setString(7, act_mapper_class);
+                	pStat.setString(8, act_pubkey);
+                	pStat.setString(9, act_cert64);
+                	pStat.setString(10, act_production_deployment);
+                	pStat.setString(11, act_last_update);
+                	pStat.setString(12, FALSE_STRING);
+                	pStat.execute();
                 }
                 else{ // Existing actor
-                    // Delete the current row and add the new row
-                    res = stmt.executeUpdate("DELETE from `Actors` where `act_guid` = '" + act_guid + "'");
-                    res = stmt.executeUpdate("INSERT into `Actors` ( `act_name` , `act_guid` , `act_type`, `act_desc`, `act_soapaxis2url`, `act_class`, `act_mapper_class`, `act_pubkey`, `act_cert64`, `act_production_deployment`, `act_last_update`) values " +
-                                             "('" + act_name + "', '" + act_guid + "', '" + act_type + "' , '" + act_desc + "', '" + act_soapaxis2url + "', '" + act_class + "', '" + act_mapper_class + "', '" + act_pubkey + "', '" + act_cert64 + "', '" + act_production_deployment + "', '" + act_last_update +  "')");
+                    // get ALL known entries
+                	Map<String, Map<String, String>> res = queryMap(act_guid, false, false);
+                	
+                	// update if necessary: only location  and description can be updated
+                	if (!res.get(ActorLocation).equals(act_soapaxis2url) || !res.get(ActorDesc).equals(act_desc)) {
+                		PreparedStatement pStat = conn.prepareStatement("UPDATE Actors SET act_soapaxis2url = ?, act_desc = ?, act_last_update = ? WHERE act_guid = ?");
+                		pStat.setString(1, act_soapaxis2url);
+                		pStat.setString(2, act_desc);
+                		pStat.setString(3, act_last_update);
+                		pStat.setString(4, act_guid);
+                		pStat.execute();
+                		
+                	} else {
+                		// if any other mismatch - return error
+                		if (!res.get(ActorName).equals(act_name) || !res.get(ActorClazz).equals(act_class) || 
+                				!res.get(ActorMapperclass).equals(act_mapper_class) || 
+                				!res.get(ActorPubkey).equals(act_pubkey) || !res.get(ActorCert64).equals(act_cert64))
+                			status = "STATUS: ERROR; Mimatch to previous registration for this guid. Please change the guid and generate new certificate;";
+                		else
+                			// otherwise simply insert heartbeat for this guid
+                			insertHeartbeat(act_guid);
+                	}
                 }
-
             }
         }
         catch(Exception e){
             //System.err.println ("Error inserting into Actors table");
             log.error("DatabaseOperations: insert() - Error inserting into Actors table");
+            status = "STATUS: ERROR; Exception encountered during insert";
         }
         finally{
             if (conn != null){
@@ -243,16 +320,22 @@ public class DatabaseOperations {
                 }
             }
         }
-
+        return status;
     }
 
-    // insert version for inserting abstract rdf, full rdf and allocatable units for existing actors
-    public void insert(String act_guid, String act_abstract_rdf, String act_full_rdf, String act_allocatable_units){
+    /**
+     * insert version for inserting abstract rdf, full rdf and allocatable units for existing actors
+     * @param act_guid
+     * @param act_abstract_rdf
+     * @param act_full_rdf
+     * @param act_allocatable_units
+     */
+    public String insertRdfs(String act_guid, String act_abstract_rdf, String act_full_rdf, String act_allocatable_units){
 
-        log.info("Inside DatabaseOperations: insert() - inserting abstract rdf, full rdf and allocatable units");
+        log.debug("Inside DatabaseOperations: insert() - inserting abstract rdf, full rdf and allocatable units");
 
         Connection conn = null;
-
+        String status = STATUS_SUCCESS;
         try{
 
             String clientIP = RegistryServlet.getClientIpAddress();
@@ -262,14 +345,14 @@ public class DatabaseOperations {
             if(clientIP == null){
                 //System.out.println("Can't get IP address of client; Insert failed");
                 log.error("DatabaseOperations: insert() - Can't get IP address of client; Insert failed");
-                return;
+                return "STATUS: ERROR; Can't get IP address of client";
             }
 
             String act_soapaxis2url = getSoapAxis2Url(act_guid);
             if(act_soapaxis2url == null){
                 //System.out.println("Actor with guid: " + act_guid + " doesn't have a soapaxis2url");
                 log.error("DatabaseOperations: insert() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
-                return;
+                return "STATUS: ERROR; Actor missing soapaxis2 URL";
             }
 
             boolean insertEntry = checkIP(clientIP, act_soapaxis2url);
@@ -283,24 +366,26 @@ public class DatabaseOperations {
             //System.out.println ("Database connection established");
             log.debug("Inside DatabaseOperations: insert() - Database connection established");
 
-            Statement stmt = conn.createStatement();
-
             if(insertEntry){ // valid client trying to update an existing entry with rdfs
 
                 Calendar cal = Calendar.getInstance();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 String act_last_update = sdf.format(cal.getTime());
 
-                int res = stmt.executeUpdate("UPDATE `Actors` set act_abstract_rdf='" + act_abstract_rdf + "' where act_guid='" + act_guid +"'");
-                res = stmt.executeUpdate("UPDATE `Actors` set act_full_rdf='" + act_full_rdf + "' where act_guid='" + act_guid +"'");
-                res = stmt.executeUpdate("UPDATE `Actors` set act_allocatable_units='" + act_allocatable_units + "' where act_guid='" + act_guid +"'");
-                res = stmt.executeUpdate("UPDATE `Actors` set act_last_update='" + act_last_update + "' where act_guid='" + act_guid +"'");
+                PreparedStatement pStat = conn.prepareStatement("UPDATE Actors SET act_abstract_rdf= ?, act_full_rdf= ?, act_allocatable_units= ?, act_last_update= ? WHERE act_guid= ?");
+                pStat.setString(1, act_abstract_rdf);
+                pStat.setString(2, act_full_rdf);
+                pStat.setString(3, act_allocatable_units);
+                pStat.setString(4, act_last_update);
+                pStat.setString(5, act_guid);
+                pStat.execute();
             }
             
         }
         catch(Exception e){
             //System.err.println ("Error inserting Ndl into Actors table");
             log.error("Inside DatabaseOperations: insert() - Exception while inserting Ndl into Actors table");
+            status = "STATUS: ERROR; Exception encountered while inserting NDL";
         }
         finally{
             if (conn != null){
@@ -313,16 +398,22 @@ public class DatabaseOperations {
                 }
             }
         }
-
+        return status;
     }
 
-    // insert version for inserting abstract rdf, full rdf for existing actors
-    public void insert(String act_guid, String act_abstract_rdf, String act_full_rdf){
+    /**
+     *  insert version for inserting abstract rdf, full rdf for existing actors
+     * @param act_guid
+     * @param act_abstract_rdf
+     * @param act_full_rdf
+     */
+    public String insertRdfs(String act_guid, String act_abstract_rdf, String act_full_rdf){
 
-        log.info("Inside DatabaseOperations: insert() - inserting abstract rdf and full rdf");
+    	log.debug("Inside DatabaseOperations: insert() - inserting abstract rdf and full rdf");
 
         Connection conn = null;
-
+        String status = STATUS_SUCCESS;
+        
         try{
             String clientIP = RegistryServlet.getClientIpAddress();
             //System.out.println("clientIP = " + clientIP);
@@ -331,14 +422,14 @@ public class DatabaseOperations {
             if(clientIP == null){
                 //System.out.println("Can't get IP address of client; Insert failed");
                 log.error("DatabaseOperations: insert() - Can't get IP address of client; Insert failed");
-                return;
+                return "STATUS: ERROR; Can't get IP address of client";
             }
 
             String act_soapaxis2url = getSoapAxis2Url(act_guid);
             if(act_soapaxis2url == null){
                 //System.out.println("Actor with guid: " + act_guid + " doesn't have a soapaxis2url");
                 log.error("DatabaseOperations: insert() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
-                return;
+                return "STATUS: ERROR; Actor does not have soapaxis2 URL";
             }
 
             boolean insertEntry = checkIP(clientIP, act_soapaxis2url);
@@ -352,24 +443,23 @@ public class DatabaseOperations {
             //System.out.println ("Database connection established");
             log.debug("Inside DatabaseOperations: insert() - Database connection established");
 
-            Statement stmt = conn.createStatement();
-
             if(insertEntry){ // valid client trying to update an existing entry with rdfs
 
                 Calendar cal = Calendar.getInstance();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 String act_last_update = sdf.format(cal.getTime());
 
-                int res = stmt.executeUpdate("UPDATE `Actors` set act_abstract_rdf='" + act_abstract_rdf + "' where act_guid='" + act_guid +"'");
-                res = stmt.executeUpdate("UPDATE `Actors` set act_full_rdf='" + act_full_rdf + "' where act_guid='" + act_guid +"'");
-                res = stmt.executeUpdate("UPDATE `Actors` set act_last_update='" + act_last_update + "' where act_guid='" + act_guid +"'");
-                
+                PreparedStatement pStat = conn.prepareStatement("UPDATE Actors SET act_abstract_rdf= ?, act_full_rdf= ?, act_last_update= ?, WHERE act_guid= ?");
+                pStat.setString(1, act_abstract_rdf);
+                pStat.setString(2, act_full_rdf);
+                pStat.setString(3, act_last_update);
+                pStat.execute();
             }
-
         }
         catch(Exception e){
             //System.err.println ("Error inserting Ndl into Actors table");
             log.error("Inside DatabaseOperations: insert() - Exception while inserting Ndl into Actors table");
+            status = "STATUS: ERROR; Exception encountered while inserting Ndl";
         }
         finally{
             if (conn != null){
@@ -382,17 +472,18 @@ public class DatabaseOperations {
                 }
             }
         }
-
+        return status;
     }
 
 
     // insert version for heartbeats; The method name is confusing; the semantic is to insert the most recent last update date for the actor
-    public void insert(String act_guid){
+    public String insertHeartbeat(String act_guid){
 
-        log.info("Inside DatabaseOperations: insert() - inserting heartbeats");
+        log.debug("Inside DatabaseOperations: insert() - inserting heartbeats");
 
         Connection conn = null;
-
+        String status = STATUS_SUCCESS;
+        
         try{
             String clientIP = RegistryServlet.getClientIpAddress();
             //System.out.println("clientIP = " + clientIP);
@@ -401,14 +492,14 @@ public class DatabaseOperations {
             if(clientIP == null){
                 //System.out.println("Can't get IP address of client; Insert failed");
                 log.error("DatabaseOperations: insert() - Can't get IP address of client; Insert failed");
-                return;
+                return "STATUS: ERROR; Can't get IP address of client";
             }
 
             String act_soapaxis2url = getSoapAxis2Url(act_guid);
             if(act_soapaxis2url == null){
                 //System.out.println("Actor with guid: " + act_guid + " doesn't have a soapaxis2url");
                 log.error("DatabaseOperations: insert() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
-                return;
+                return "STATUS: ERROR; Actor does not have a soapaxis2 URL";
             }
 
             boolean insertEntry = checkIP(clientIP, act_soapaxis2url);
@@ -422,22 +513,23 @@ public class DatabaseOperations {
             //System.out.println ("Database connection established");
             log.debug("Inside DatabaseOperations: insert() - Database connection established");
 
-            Statement stmt = conn.createStatement();
-
             if(insertEntry){ // valid client trying to update an existing entry with rdfs
 
                 Calendar cal = Calendar.getInstance();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 String act_last_update = sdf.format(cal.getTime());
 
-                int res = stmt.executeUpdate("UPDATE `Actors` set act_last_update='" + act_last_update + "' where act_guid='" + act_guid +"'");
-
+                PreparedStatement pStat = conn.prepareStatement("UPDATE Actors SET act_last_update= ? WHERE act_guid= ?");
+                pStat.setString(1, act_last_update);
+                pStat.setString(2, act_guid);
+                pStat.execute();
             }
 
         }
         catch(Exception e){
             //System.err.println ("Error inserting heartbeats");
             log.error("Inside DatabaseOperations: insert() - Exception while inserting heartbeats");
+            status = "STATUS: ERROR; Exception encountered while inserting";
         }
         finally{
             if (conn != null){
@@ -450,7 +542,7 @@ public class DatabaseOperations {
                 }
             }
         }
-
+        return status;
     }
 
     // make sure no null keys or values are inserted
@@ -462,16 +554,16 @@ public class DatabaseOperations {
     
 	/**
 	 * Return information about actors as map indexed by actor name. If essential only set, don't
-	 * return RDFs
+	 * return RDFs and descriptions
 	 * @param actorType
 	 * @param essentialOnly
 	 * @return
 	 */
-    public Map<String, Map<String, String>> queryMap(String actorType, boolean essentialOnly) {
+    public Map<String, Map<String, String>> queryMap(String actorType, boolean validOnly, boolean essentialOnly) {
     	
     	HashMap<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
 
-    	log.info("Inside DatabaseOperations: query() - query for Actor of Type: " + actorType);
+    	log.debug("Inside DatabaseOperations: query() - query for Actor of Type: " + actorType);
 
         Connection conn = null;
 
@@ -495,16 +587,17 @@ public class DatabaseOperations {
             });
             
             ResultSet srs = null;
-            if(actorType.equalsIgnoreCase("actors")){
+            if(actorType.equalsIgnoreCase(QUERY_ACTORS)){
                 srs = stmt.executeQuery("SELECT * FROM Actors");
-            }
-            else if(actorType.equalsIgnoreCase("sm")){
+            } else if (actorType.equalsIgnoreCase(QUERY_ACTORS_VERIFIED)) {
+            	srs = stmt.executeQuery("SELECT * FROM Actors where act_verified='" + TRUE_STRING + "'");
+            } else if(actorType.equalsIgnoreCase(QUERY_SMS)){
                 srs = stmt.executeQuery("SELECT * FROM Actors where act_type=1");
             }
-            else if(actorType.equalsIgnoreCase("brokers")){
+            else if(actorType.equalsIgnoreCase(QUERY_BROKERS)){
                 srs = stmt.executeQuery("SELECT * FROM Actors where act_type=2");
             }
-            else if(actorType.equalsIgnoreCase("am")){
+            else if(actorType.equalsIgnoreCase(QUERY_AMS)){
                 srs = stmt.executeQuery("SELECT * FROM Actors where act_type=3");
             }
             else {
@@ -537,33 +630,32 @@ public class DatabaseOperations {
             	nonNullMapPut(tmpMap, ActorLocation, srs.getString("act_soapaxis2url"));
             	nonNullMapPut(tmpMap, ActorPubkey, srs.getString("act_pubkey"));
             	nonNullMapPut(tmpMap, ActorCert64, srs.getString("act_cert64"));
+            	
             	if (!essentialOnly) {
             		nonNullMapPut(tmpMap, ActorFullRDF, srs.getString("act_full_rdf"));
             		nonNullMapPut(tmpMap, ActorAllocunits, srs.getString("act_allocatable_units"));
                 	nonNullMapPut(tmpMap, ActorAbstractRDF, srs.getString("act_abstract_rdf"));
                 	nonNullMapPut(tmpMap, ActorClazz, srs.getString("act_class"));
                 	nonNullMapPut(tmpMap, ActorMapperclass, srs.getString("act_mapper_class"));
+                	nonNullMapPut(tmpMap, ActorDesc, srs.getString("act_desc"));
             	}
             	// FIXME: hard code protocol for now
             	nonNullMapPut(tmpMap, ActorProtocol, SOAPAXIS2_PROTOCOL);
-
+            	
                 String act_last_update = srs.getString("act_last_update");
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date lastUpdate = sdf.parse(act_last_update);
-                Calendar cal = Calendar.getInstance();
-                Date now = cal.getTime();
-
-                long diff = now.getTime() - lastUpdate.getTime(); // diff is in milliseconds
-                long diffInDays = diff / (1000L*60L*60L*24L); // difference in number of days
-                long diffInSeconds = diff /(1000L); // difference in number of seconds
-                long diffInMinutes = diff / (1000L*60L); // difference in number of minutes
-                long diffInHours = diff / (1000L*60L*60L); // differenc in number of hours
-
+            	nonNullMapPut(tmpMap, ActorLastUpdate, act_last_update);
+            	
                 String act_production_deployment = srs.getString("act_production_deployment");
-
-                if((diffInMinutes <= 2) && act_production_deployment.equalsIgnoreCase("True")){ // the entry is less than 2 minutes old and it is an entry with production deployment (!localhost)
+                nonNullMapPut(tmpMap, ActorProduction, act_production_deployment);
+            	
+                String act_verified = srs.getString("act_verified");
+                nonNullMapPut(tmpMap, ActorVerified, act_verified);
+                
+            	// save the result 
+                if (validOnly && isValidEntry(tmpMap))
                 	result.put(srs.getString("act_guid"), tmpMap);
-                }
+                else if (!validOnly)
+                	result.put(srs.getString("act_guid"), tmpMap);
             }
         }
         catch(Exception e){
@@ -585,23 +677,23 @@ public class DatabaseOperations {
         if (result.size() > 1) 
             result.put("STATUS", new HashMap<String, String>() {
             	{
-            		put("STATUS", "OK");
+            		put("STATUS", STATUS_SUCCESS);
             	}
             });
 
         return result;
     }
-
+    
     /**
-     * Return information about actors as string
-     * @param actorType
+     * Get data on one actor
+     * @param act_guid
+     * @param essentialOnly
      * @return
      */
-    public String query(String actorType){
+    public Map<String, String> queryMapForGuid(String act_guid, boolean essentialOnly) {
+    	
+    	Map<String, String> tmpMap = new HashMap<String, String>();
 
-        log.info("Inside DatabaseOperations: query() - query for Actor of Type: " + actorType);
-
-        String result = null;
         Connection conn = null;
 
         try{
@@ -615,102 +707,57 @@ public class DatabaseOperations {
             //System.out.println ("Database connection established");
             log.debug("Inside DatabaseOperations: query() - Database connection established");
 
-            Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            PreparedStatement pStat = conn.prepareStatement("SELECT * FROM Actors where act_guid= ?");
+            pStat.setString(1, act_guid);
+            
+            ResultSet srs = pStat.executeQuery();
 
-            ResultSet srs = null;
-            if(actorType.equalsIgnoreCase("actors")){
-                srs = stmt.executeQuery("SELECT * FROM Actors");
-            }
-            else if(actorType.equalsIgnoreCase("sm")){
-                srs = stmt.executeQuery("SELECT * FROM Actors where act_type=1");
-            }
-            else if(actorType.equalsIgnoreCase("brokers")){
-                srs = stmt.executeQuery("SELECT * FROM Actors where act_type=2");
-            }
-            else if(actorType.equalsIgnoreCase("am")){
-                srs = stmt.executeQuery("SELECT * FROM Actors where act_type=3");
-            }
-            else{
-                result = "Unknown actor Type";
-            }
-
-            int flag = 0;
-            String output = "";
             while (srs.next()) {
-                String act_name = srs.getString("act_name");
-                String act_guid = srs.getString("act_guid");
-                String act_type = srs.getString("act_type");
-                String act_soapaxis2url = srs.getString("act_soapaxis2url");
-                String act_class = srs.getString("act_class");
-                String act_mapper_class = srs.getString("act_mapper_class");
-                String act_pubkey = srs.getString("act_pubkey");
-                String act_cert64 = srs.getString("act_cert64");
-		
-                String act_abstract_rdf = srs.getString("act_abstract_rdf");
-                String act_full_rdf = srs.getString("act_full_rdf");
-                String act_allocatable_units = srs.getString("act_allocatable_units");
+            	nonNullMapPut(tmpMap, ActorName, srs.getString("act_name"));
+            	nonNullMapPut(tmpMap, ActorGuid, srs.getString("act_guid"));
 
+            	String act_type = srs.getString("act_type");
                 String actor_type = null;
+                // These names match ConfigurationProcessor definitions in ORCA
                 if(act_type.equalsIgnoreCase("1")){
-                    actor_type = "ORCA Service Manager (SM)";
+                    actor_type = "sm";
                 }
                 if(act_type.equalsIgnoreCase("2")){
-                    actor_type = "ORCA Broker";
+                    actor_type = "broker";
                 }
                 if(act_type.equalsIgnoreCase("3")){
-                    actor_type = "ORCA Site Authority / Aggregate Manager (AM)";
+                    actor_type = "site";
                 }
-
+            	nonNullMapPut(tmpMap, ActorType, actor_type);
+            	
+            	nonNullMapPut(tmpMap, ActorLocation, srs.getString("act_soapaxis2url"));
+            	nonNullMapPut(tmpMap, ActorPubkey, srs.getString("act_pubkey"));
+            	nonNullMapPut(tmpMap, ActorCert64, srs.getString("act_cert64"));
+            	
+            	if (!essentialOnly) {
+            		nonNullMapPut(tmpMap, ActorFullRDF, srs.getString("act_full_rdf"));
+            		nonNullMapPut(tmpMap, ActorAllocunits, srs.getString("act_allocatable_units"));
+                	nonNullMapPut(tmpMap, ActorAbstractRDF, srs.getString("act_abstract_rdf"));
+                	nonNullMapPut(tmpMap, ActorClazz, srs.getString("act_class"));
+                	nonNullMapPut(tmpMap, ActorMapperclass, srs.getString("act_mapper_class"));
+                	nonNullMapPut(tmpMap, ActorDesc, srs.getString("act_desc"));
+            	}
+            	// FIXME: hard code protocol for now
+            	nonNullMapPut(tmpMap, ActorProtocol, SOAPAXIS2_PROTOCOL);
+            	
                 String act_last_update = srs.getString("act_last_update");
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date lastUpdate = sdf.parse(act_last_update);
-                Calendar cal = Calendar.getInstance();
-                Date now = cal.getTime();
-
-                long diff = now.getTime() - lastUpdate.getTime(); // diff is in milliseconds
-                long diffInDays = diff / (1000L*60L*60L*24L); // difference in number of days
-                long diffInSeconds = diff /(1000L); // difference in number of seconds
-                long diffInMinutes = diff / (1000L*60L); // difference in number of minutes
-                long diffInHours = diff / (1000L*60L*60L); // differenc in number of hours
-
+            	nonNullMapPut(tmpMap, ActorLastUpdate, act_last_update);
+            	
                 String act_production_deployment = srs.getString("act_production_deployment");
-
-                if((diffInMinutes <= 2) && act_production_deployment.equalsIgnoreCase("True")){ // the entry is less than 2 minutes old and it is an entry with production deployment (!localhost)
-
-                    flag = 1; // result will have at least one entry
-
-                    output += "ActorName = " + act_name + " , ActorGUID = " + act_guid + " , ActorType = " + actor_type + " , ActorSOAPAxis2URL = " + act_soapaxis2url + " , ActorClass = " + act_class + " , ActorPolicy = " + act_mapper_class + " , ActorPubkey = " + act_pubkey + " , ActorCert64 = " + act_cert64;
-
-                    if(act_type.equalsIgnoreCase("3")){
-                        if(act_abstract_rdf != null && act_full_rdf != null && act_allocatable_units != null){
-                            output += " , ActorSiteAbstractRDF = " + act_abstract_rdf + " , ActorSiteFullRDF = " + act_full_rdf + " , ActorAllocatableUnits = " + act_allocatable_units;
-                        }
-                        else if(act_abstract_rdf != null && act_full_rdf != null){
-                            output += " , ActorSiteAbstractRDF = " + act_abstract_rdf + " , ActorSiteFullRDF = " + act_full_rdf;
-                        }
-                        else{
-                            output += " , ActorSiteAbstractRDF = " + "UNKNOWN" + " , ActorAllocatableUnits = " + "UNKNOWN";
-                        }
-                    }
-
-                    output += " \n" ;
-
-                    //System.out.println("Actor Name: " + act_name + " | Actor GUID: " + act_guid );
-                }
-
-
+                nonNullMapPut(tmpMap, ActorProduction, act_production_deployment);
+            	
+                String act_verified = srs.getString("act_verified");
+                nonNullMapPut(tmpMap, ActorVerified, act_verified);
             }
-            if(flag == 0){
-                result = "Query did not match any actor in the registry";
-            }
-            else if(flag == 1){
-                result = output;
-            }
-
         }
         catch(Exception e){
             //System.err.println ("Cannot query the database server");
-            log.error("Inside DatabaseOperations: query() - Exception while querying the database server");
+            log.error("Inside DatabaseOperations: query() - Exception while querying the database server: " + e.toString());
         }
         finally{
             if (conn != null){
@@ -723,14 +770,13 @@ public class DatabaseOperations {
                 }
             }
         }
-
-        return result;
-
+       
+        return tmpMap;
     }
-
+    
     private boolean checkExistingGuid(String input_act_guid){
 
-       log.info("Inside DatabaseOperations: checkExistingGuid()");
+       log.debug("Inside DatabaseOperations: checkExistingGuid()");
 
        Connection conn = null;
        boolean guidExists = false;
@@ -748,12 +794,6 @@ public class DatabaseOperations {
             ResultSet srs = null;
             srs = stmt.executeQuery("SELECT * FROM Actors");
 
-            if(srs == null){
-                //System.out.println("Actors table is empty");
-                log.debug("DatabaseOperations: checkExistingGuid() - Actors table is empty");
-                return (false);
-            }
-
             while (srs.next()) {
                 String act_guid = srs.getString("act_guid");
                 if(act_guid.equalsIgnoreCase(input_act_guid)){
@@ -762,13 +802,10 @@ public class DatabaseOperations {
                     guidExists = true;
                 }
             }
-
-
         }
         catch(Exception e){
             //System.err.println ("Cannot connect to database server");
             log.error("DatabaseOperations: checkExistingGuid() - Cannot connect to database server");
-
         }
         finally{
             if (conn != null){
@@ -789,7 +826,7 @@ public class DatabaseOperations {
 
     private String getSoapAxis2Url(String input_act_guid){
 
-        log.info("Inside DatabaseOperations: getSoapAxis2Url()");
+        log.debug("Inside DatabaseOperations: getSoapAxis2Url()");
 
         String resSoapAxis2Url = null;
         Connection conn = null;
@@ -806,12 +843,6 @@ public class DatabaseOperations {
 
             ResultSet srs = null;
             srs = stmt.executeQuery("SELECT * FROM Actors");
-
-            if(srs == null){
-                //System.out.println("Actors table is empty");
-                log.debug("DatabaseOperations: getSoapAxis2Url() - Actors table is empty");
-                return null;
-            }
 
             while (srs.next()) {
                 String act_guid = srs.getString("act_guid");
@@ -845,7 +876,7 @@ public class DatabaseOperations {
 
     private boolean checkIP(String clientIP, String act_soapaxis2url){
 
-        log.info("Inside DatabaseOperations: checkIP()");
+        log.debug("Inside DatabaseOperations: checkIP()");
 
         String[] splitSoapUrl = act_soapaxis2url.split("//");
         String noHttp = splitSoapUrl[1];
@@ -886,7 +917,87 @@ public class DatabaseOperations {
 
     }
 
+    /**
+     * Update a status of a particular entry ('True' means valid, anything else, invalid)
+     * @param guid
+     * @param valid
+     */
+    public void updateEntryValidStatus(String input_act_guid, boolean valid) {
 
+        log.info("Setting status of actor " + input_act_guid + " to " + valid);
+        Connection conn = null;
+        String tableValue = null;
+        
+        if (valid)
+        	tableValue = TRUE_STRING;
+        else
+        	tableValue = FALSE_STRING;
+        
+        try{
+             //System.out.println("Trying to get a new instance");
+             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+             //System.out.println("Trying to get a database connection");
+             conn = DriverManager.getConnection (url, userName, password);
+             //System.out.println ("Database connection established");
 
+             PreparedStatement pStat = conn.prepareStatement("UPDATE Actors SET act_verified= ? WHERE act_guid = ?");
+             pStat.setString(1, tableValue);
+             pStat.setString(2, input_act_guid);
+             if (pStat.executeUpdate() != 1)
+            	 log.error("Unable to update the state of actor " + input_act_guid);
+             
+         }
+         catch(Exception e){
+             //System.err.println ("Cannot connect to database server");
+             log.error("DatabaseOperations: checkExistingGuid() - Cannot connect to database server");
 
+         }
+         finally{
+             if (conn != null){
+                 try{
+                     conn.close ();
+                     //System.out.println ("Database connection terminated");
+                     log.debug("Database connection terminated");
+                 }
+                 catch (Exception e){ /* ignore close errors */
+                 }
+             }
+         }
+    }
+   
+    /**
+     * check the validity of an entry in a map
+     * @param m
+     * @return
+     */
+    protected boolean isValidEntry(Map<String, String> m) {
+    	
+    	if (m.get(ActorProduction) == null)
+    		return false;
+    	if (m.get(ActorLastUpdate) == null)
+    		return false;
+    	
+    	String act_production_deployment = m.get(ActorProduction);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        try {
+        	Date lastUpdate = sdf.parse(m.get(ActorLastUpdate));
+            Calendar cal = Calendar.getInstance();
+            Date now = cal.getTime();
+
+            long diff = now.getTime() - lastUpdate.getTime(); // diff is in milliseconds
+            long diffInDays = diff / (1000L*60L*60L*24L); // difference in number of days
+            long diffInSeconds = diff /(1000L); // difference in number of seconds
+            long diffInMinutes = diff / (1000L*60L); // difference in number of minutes
+            long diffInHours = diff / (1000L*60L*60L); // differenc in number of hours
+
+            if((diffInMinutes <= 2) && act_production_deployment.equalsIgnoreCase(TRUE_STRING)){ 
+            	// the entry is less than 2 minutes old and it is an entry with production deployment (!localhost)
+            	return true;
+            }	
+        } catch (ParseException e) {
+
+        } 
+        return false;
+    }
+    
 }

@@ -19,6 +19,7 @@ CREATE TABLE `Actors` (
   `act_allocatable_units` text,
   `act_production_deployment` text,
   `act_last_update` datetime,
+  `act_verified` text,
   PRIMARY KEY  (`act_id`),
   UNIQUE KEY `act_guid` (`act_guid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=175 DEFAULT CHARSET=utf8;
