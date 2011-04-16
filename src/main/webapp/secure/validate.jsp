@@ -1,4 +1,4 @@
-<%@ page import="java.io.*, java.net.*, java.util.*, orca.registry.*"  %>
+<%@ page import="java.io.*, java.net.*, java.util.*, java.security.cert.*, org.apache.ws.commons.util.*, java.security.*, java.lang.*, orca.registry.*"  %>
 <jsp:useBean id="data" class="orca.registry.ValidateFormData" scope="session"/>
 <jsp:setProperty name="data" property="*"/>
 <html>
@@ -68,14 +68,23 @@ input.greenbutton
 
         	String act_cert64 = tmpMap.get(DatabaseOperations.ActorCert64);
 			String escaped_act_cert64 = act_cert64;
+			
+			CertificateFactory cf = CertificateFactory.getInstance("X.509");
+ 			X509Certificate cert = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(Base64.decode(act_cert64)));
+ 			MessageDigest md = MessageDigest.getInstance("MD5");
+ 			byte[] certHash = md.digest(cert.getEncoded());
+ 			
+ 			String hashString = "";
+ 			for (int i=0; i<certHash.length; i++)
+ 				hashString += Integer.toHexString(certHash[i] & 0xFF) + ":";
 		
 %>
 <h2>Actor Name: <%= act_name %> </h2>
 <h2>Actor Guid: <%= act_guid %> </h2>
 <h2>Actor Description: <%= act_desc %> </h2>
-<h3>Actor Public Key: </h2>
+<h3>Actor Certificate MD5 Fingerprint: </h2>
 <pre>
-<%= act_pubkey %>
+<%= hashString %>
 </pre>
 <h3>Actor Cert: </h2>
 <pre>
@@ -87,13 +96,13 @@ input.greenbutton
 <%
 	if ("validate".equals(data.getAction())) {
 %>
-<h2 style="color:green;">You are about to validate an actor!</h2>
+<h2 style="color:green;">You are about to validate this actor!</h2>
 <input type="submit" value="Validate" />
 <input type="hidden" name="action" value="validate" />
 <%
 	} else {
 %>
-<h2 style="color:red;">Warning! You are about to invalidate an actor! </h2>
+<h2 style="color:red;">Warning! You are about to invalidate this actor! </h2>
 <input type="submit" value="Invalidate" />
 <input type="hidden" name="action" value="invalidate" />
 <%

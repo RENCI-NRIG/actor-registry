@@ -250,7 +250,7 @@ input.greenbutton
             out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showString=" + escaped_act_pubkey + "\">Click for Public Key</a></td>");
             out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showString=" + escaped_act_cert64 + "\">Click for Actor Certificate</a></td>");
 
-            if(act_type.equalsIgnoreCase("3")){
+            if(act_type.equalsIgnoreCase("site")){
                     if(act_abstract_rdf == null || act_full_rdf ==null){
                             out.println("<td align=\"center\">" + "Not Available" + "</td>");
                             out.println("<td align=\"center\">" + "Not Available" + "</td>");

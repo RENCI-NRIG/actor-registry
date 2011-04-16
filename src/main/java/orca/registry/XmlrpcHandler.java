@@ -11,6 +11,7 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
+import org.apache.ws.commons.util.Base64;
 
 /**
  *
@@ -227,6 +228,7 @@ public class XmlrpcHandler {
 
     public String getRegistryVersion(String v){
         return "hello: " + v;
+       
     }
 
 
