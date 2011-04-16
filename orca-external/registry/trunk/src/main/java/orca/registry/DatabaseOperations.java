@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
@@ -36,6 +35,7 @@ public class DatabaseOperations {
 	private static final String REGISTRY_USERNAME = "registry.username";
 	private static final String TRUE_STRING = "True";
 	private static final String FALSE_STRING = "False";
+	
 	public static final String QUERY_AMS = "ams";
 	public static final String QUERY_BROKERS = "brokers";
 	public static final String QUERY_SMS = "sms";
@@ -233,7 +233,7 @@ public class DatabaseOperations {
                 act_production_deployment = TRUE_STRING;
             }
             else{
-                if(ipSoapUrl.equalsIgnoreCase("localhost")){ // Special check: if the soapaxis url is localhost (implying test deployment) set production deployment as false
+                if (ipSoapUrl.equalsIgnoreCase("localhost")){ // Special check: if the soapaxis url is localhost (implying test deployment) set production deployment as false
                     insertEntry = true;
                     act_production_deployment = FALSE_STRING;
                 }
@@ -332,41 +332,48 @@ public class DatabaseOperations {
      */
     public String insertRdfs(String act_guid, String act_abstract_rdf, String act_full_rdf, String act_allocatable_units){
 
-        log.debug("Inside DatabaseOperations: insert() - inserting abstract rdf, full rdf and allocatable units");
+    	if ((act_guid==null) || (act_full_rdf == null) || (act_abstract_rdf==null) || (act_allocatable_units==null))
+    		return "STATUS: ERROR; Invalid parameters";
+    	
+        log.debug("Inside DatabaseOperations: insertRdfs() - inserting abstract rdf, full rdf and allocatable units");
 
         Connection conn = null;
         String status = STATUS_SUCCESS;
-        try{
-
+        try {
             String clientIP = RegistryServlet.getClientIpAddress();
             //System.out.println("clientIP = " + clientIP);
-            log.debug("DatabaseOperations: insert() -  clientIP = " + clientIP);
+            log.debug("DatabaseOperations: inserRdfst() -  clientIP = " + clientIP);
 
             if(clientIP == null){
                 //System.out.println("Can't get IP address of client; Insert failed");
-                log.error("DatabaseOperations: insert() - Can't get IP address of client; Insert failed");
+                log.error("DatabaseOperations: insertRdfs() - Can't get IP address of client; Insert failed");
                 return "STATUS: ERROR; Can't get IP address of client";
             }
 
             String act_soapaxis2url = getSoapAxis2Url(act_guid);
             if(act_soapaxis2url == null){
                 //System.out.println("Actor with guid: " + act_guid + " doesn't have a soapaxis2url");
-                log.error("DatabaseOperations: insert() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
+                log.error("DatabaseOperations: insertRdfs() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
                 return "STATUS: ERROR; Actor missing soapaxis2 URL";
             }
 
             boolean insertEntry = checkIP(clientIP, act_soapaxis2url);
 
+            if (!checkExistingGuid(act_guid)) {
+            	log.error("DatabaseOperations: insertRdfs() - " + "Actor with guid: " + act_guid + " actor entry does not exist");
+            	return "STATUS: ERROR; unknown actor " + act_guid;
+            }
+            
             //System.out.println("Trying to get a new instance");
-            log.debug("Inside DatabaseOperations: insert() - Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: insertRdfs() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
             //System.out.println("Trying to get a database connection");
-            log.debug("Inside DatabaseOperations: insert() - Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: insertRdfs() - Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
             //System.out.println ("Database connection established");
-            log.debug("Inside DatabaseOperations: insert() - Database connection established");
+            log.debug("Inside DatabaseOperations: insertRdfs() - Database connection established");
 
-            if(insertEntry){ // valid client trying to update an existing entry with rdfs
+            if(insertEntry) { // valid client trying to update an existing entry with rdfs
 
                 Calendar cal = Calendar.getInstance();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -384,7 +391,7 @@ public class DatabaseOperations {
         }
         catch(Exception e){
             //System.err.println ("Error inserting Ndl into Actors table");
-            log.error("Inside DatabaseOperations: insert() - Exception while inserting Ndl into Actors table");
+            log.error("Inside DatabaseOperations: insertRdfs() - Exception while inserting Ndl into Actors table");
             status = "STATUS: ERROR; Exception encountered while inserting NDL";
         }
         finally{
@@ -409,7 +416,10 @@ public class DatabaseOperations {
      */
     public String insertRdfs(String act_guid, String act_abstract_rdf, String act_full_rdf){
 
-    	log.debug("Inside DatabaseOperations: insert() - inserting abstract rdf and full rdf");
+       	if ((act_guid==null) || (act_full_rdf == null) || (act_abstract_rdf==null))
+    		return "STATUS: ERROR; Invalid parameters";
+ 
+    	log.debug("Inside DatabaseOperations: insertRdfs() - inserting abstract rdf and full rdf");
 
         Connection conn = null;
         String status = STATUS_SUCCESS;
@@ -417,31 +427,36 @@ public class DatabaseOperations {
         try{
             String clientIP = RegistryServlet.getClientIpAddress();
             //System.out.println("clientIP = " + clientIP);
-            log.debug("DatabaseOperations: insert() -  clientIP = " + clientIP);
+            log.debug("DatabaseOperations: insertRdfs() -  clientIP = " + clientIP);
 
             if(clientIP == null){
                 //System.out.println("Can't get IP address of client; Insert failed");
-                log.error("DatabaseOperations: insert() - Can't get IP address of client; Insert failed");
+                log.error("DatabaseOperations: insertRdfs() - Can't get IP address of client; Insert failed");
                 return "STATUS: ERROR; Can't get IP address of client";
             }
 
             String act_soapaxis2url = getSoapAxis2Url(act_guid);
             if(act_soapaxis2url == null){
                 //System.out.println("Actor with guid: " + act_guid + " doesn't have a soapaxis2url");
-                log.error("DatabaseOperations: insert() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
+                log.error("DatabaseOperations: insertRdfs() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
                 return "STATUS: ERROR; Actor does not have soapaxis2 URL";
             }
 
             boolean insertEntry = checkIP(clientIP, act_soapaxis2url);
 
+            if (!checkExistingGuid(act_guid)) {
+            	log.error("DatabaseOperations: insertRdfs() - " + "Actor with guid: " + act_guid + " actor entry does not exist");
+            	return "STATUS: ERROR; unknown actor " + act_guid;
+            }
+            
             //System.out.println("Trying to get a new instance");
-            log.debug("Inside DatabaseOperations: insert() - Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: insertRdfs() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
             //System.out.println("Trying to get a database connection");
-            log.debug("Inside DatabaseOperations: insert() - Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: insertRdfs() - Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
             //System.out.println ("Database connection established");
-            log.debug("Inside DatabaseOperations: insert() - Database connection established");
+            log.debug("Inside DatabaseOperations: insertRdfs() - Database connection established");
 
             if(insertEntry){ // valid client trying to update an existing entry with rdfs
 
@@ -458,7 +473,7 @@ public class DatabaseOperations {
         }
         catch(Exception e){
             //System.err.println ("Error inserting Ndl into Actors table");
-            log.error("Inside DatabaseOperations: insert() - Exception while inserting Ndl into Actors table");
+            log.error("Inside DatabaseOperations: insertRdfs() - Exception while inserting Ndl into Actors table");
             status = "STATUS: ERROR; Exception encountered while inserting Ndl";
         }
         finally{
@@ -479,7 +494,7 @@ public class DatabaseOperations {
     // insert version for heartbeats; The method name is confusing; the semantic is to insert the most recent last update date for the actor
     public String insertHeartbeat(String act_guid){
 
-        log.debug("Inside DatabaseOperations: insert() - inserting heartbeats");
+        log.debug("Inside DatabaseOperations: insertHeartbeat() - inserting heartbeats");
 
         Connection conn = null;
         String status = STATUS_SUCCESS;
@@ -487,31 +502,36 @@ public class DatabaseOperations {
         try{
             String clientIP = RegistryServlet.getClientIpAddress();
             //System.out.println("clientIP = " + clientIP);
-            log.debug("DatabaseOperations: insert() -  clientIP = " + clientIP);
+            log.debug("DatabaseOperations: insertHeartbeat() -  clientIP = " + clientIP);
 
             if(clientIP == null){
                 //System.out.println("Can't get IP address of client; Insert failed");
-                log.error("DatabaseOperations: insert() - Can't get IP address of client; Insert failed");
+                log.error("DatabaseOperations: insertHeartbeat() - Can't get IP address of client; Insert failed");
                 return "STATUS: ERROR; Can't get IP address of client";
             }
 
             String act_soapaxis2url = getSoapAxis2Url(act_guid);
             if(act_soapaxis2url == null){
                 //System.out.println("Actor with guid: " + act_guid + " doesn't have a soapaxis2url");
-                log.error("DatabaseOperations: insert() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
+                log.error("DatabaseOperations: inserHeartbeatt() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
                 return "STATUS: ERROR; Actor does not have a soapaxis2 URL";
             }
 
             boolean insertEntry = checkIP(clientIP, act_soapaxis2url);
 
+            if (!checkExistingGuid(act_guid)) {
+            	log.error("DatabaseOperations: insertHeartbeat() - " + "Actor with guid: " + act_guid + " actor entry does not exist");
+            	return "STATUS: ERROR; unknown actor " + act_guid;
+            }
+            
             //System.out.println("Trying to get a new instance");
-            log.debug("Inside DatabaseOperations: insert() - Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: insertHeartbeat() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
             //System.out.println("Trying to get a database connection");
-            log.debug("Inside DatabaseOperations: insert() - Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: insertHeartbeat() - Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
             //System.out.println ("Database connection established");
-            log.debug("Inside DatabaseOperations: insert() - Database connection established");
+            log.debug("Inside DatabaseOperations: insertHeartbeat() - Database connection established");
 
             if(insertEntry){ // valid client trying to update an existing entry with rdfs
 
@@ -528,7 +548,7 @@ public class DatabaseOperations {
         }
         catch(Exception e){
             //System.err.println ("Error inserting heartbeats");
-            log.error("Inside DatabaseOperations: insert() - Exception while inserting heartbeats");
+            log.error("Inside DatabaseOperations: insertHeartbeat() - Exception while inserting heartbeats");
             status = "STATUS: ERROR; Exception encountered while inserting";
         }
         finally{
@@ -789,11 +809,10 @@ public class DatabaseOperations {
             conn = DriverManager.getConnection (url, userName, password);
             //System.out.println ("Database connection established");
 
-            Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
-
-            ResultSet srs = null;
-            srs = stmt.executeQuery("SELECT * FROM Actors");
-
+            PreparedStatement pStat = conn.prepareStatement("SELECT act_name, act_guid FROM Actors where act_guid= ?");
+            pStat.setString(1, input_act_guid);
+            ResultSet srs = pStat.executeQuery();
+            
             while (srs.next()) {
                 String act_guid = srs.getString("act_guid");
                 if(act_guid.equalsIgnoreCase(input_act_guid)){
@@ -949,7 +968,7 @@ public class DatabaseOperations {
          }
          catch(Exception e){
              //System.err.println ("Cannot connect to database server");
-             log.error("DatabaseOperations: checkExistingGuid() - Cannot connect to database server");
+             log.error("DatabaseOperations: updateEntryValidStatus() - Cannot connect to database server");
 
          }
          finally{
