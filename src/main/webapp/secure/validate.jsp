@@ -43,6 +43,20 @@ input.greenbutton
 }
 </style>
 
+<script type="text/javascript">
+function submitForm(actionValue) {
+
+	document.getElementById('action').value=actionValue;
+	document.actionform.submit();
+}
+
+function showWarning(html) {
+
+	document.getElementById('warning').innerHTML=html;
+}
+
+</script>
+
 <%
 		String act_guid = data.getGuid();
 
@@ -69,50 +83,63 @@ input.greenbutton
         	String act_cert64 = tmpMap.get(DatabaseOperations.ActorCert64);
 			String escaped_act_cert64 = act_cert64;
 			
-			CertificateFactory cf = CertificateFactory.getInstance("X.509");
- 			X509Certificate cert = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(Base64.decode(act_cert64)));
+			//CertificateFactory cf = CertificateFactory.getInstance("X.509");
+ 			//X509Certificate cert = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(Base64.decode(act_cert64)));
  			MessageDigest md = MessageDigest.getInstance("MD5");
- 			byte[] certHash = md.digest(cert.getEncoded());
+ 			//byte[] certHash = md.digest(cert.getEncoded());
+ 			byte[] certHash = md.digest(Base64.decode(act_cert64));
  			
  			String hashString = "";
  			for (int i=0; i<certHash.length; i++)
  				hashString += Integer.toHexString(certHash[i] & 0xFF) + ":";
 		
 %>
-<h2>Actor Name: <%= act_name %> </h2>
-<h2>Actor Guid: <%= act_guid %> </h2>
-<h2>Actor Description: <%= act_desc %> </h2>
-<h3>Actor Certificate MD5 Fingerprint: </h2>
+<h3>Actor Name: <%= act_name %> </h3>
+<h3>Actor Guid: <%= act_guid %> </h3>
+<h3>Actor Status:
+<%
+			if ("True".equals(tmpMap.get(DatabaseOperations.ActorVerified))) {
+%>
+<font style="color:green">Validated</font></h3>
+<%
+			} else {
+%>
+<font style="color:red">Not validated</font></h3>
+<%
+			}
+%>
+<h3>Actor Description: <%= act_desc %> </h3>
+<h3>Actor Certificate MD5 Fingerprint: </h3>
 <pre>
 <%= hashString %>
 </pre>
-<h3>Actor Cert: </h2>
+<h3>Actor Cert: </h3>
 <pre>
 <%= act_cert64 %>
 </pre>
 
-<form action="validate-action.jsp">
+<form id="actionform" name="actionform" action="validate-action.jsp">
 <input type="hidden" name="guid" value="<%= act_guid %>" />
+<input type="hidden" id="action" name="action" value="manage" />
 <%
-	if ("validate".equals(data.getAction())) {
+			if ("True".equals(tmpMap.get(DatabaseOperations.ActorVerified))) {
 %>
-<h2 style="color:green;">You are about to validate this actor!</h2>
-<input type="submit" value="Validate" />
-<input type="hidden" name="action" value="validate" />
+<input type="button" value="Invalidate" onClick="submitForm('invalidate')" onMouseOver="showWarning('<h2 style=color:red>You are about to invalidate this actor!</h2>')" onMouseOut="showWarning('')" />
+
 <%
-	} else {
+			} else {
 %>
-<h2 style="color:red;">Warning! You are about to invalidate this actor! </h2>
-<input type="submit" value="Invalidate" />
-<input type="hidden" name="action" value="invalidate" />
+<input type="button" value="Validate" onClick="submitForm('validate')" onMouseOver="showWarning('<h2 style=color:green>You are about to validate this actor!</h2>')"  onMouseOut="showWarning('')"/>
 <%
-	}
-%>	
-<input type="button" name="Cancel" value="Cancel" onclick="window.location='../actors.jsp' "/>
-<input type="hidden" name="action" value="<%= data.getAction() %>" />
+			}
+%>
+<input type="button" name="Delete" value="Delete" onClick="submitForm('delete')" onMouseOver="showWarning('<h2 style=color:red>You are about to delete this actor from the database!</h2>')"  onMouseOut="showWarning('')"/>
+<input type="button" name="Cancel" value="Cancel" onClick="window.location='../actors.jsp';"/>
 </form>
 <%		
 		}
 %>
+<div id="warning">
+</div>
 </body>
 </html>

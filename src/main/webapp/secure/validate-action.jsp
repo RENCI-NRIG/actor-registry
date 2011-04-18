@@ -1,7 +1,6 @@
 <%@ page import="java.io.*, java.net.*, java.util.*, orca.registry.*"  %>
 <jsp:useBean id="data" class="orca.registry.ValidateFormData" scope="session"/>
-<jsp:setProperty name="data" property="*"/>
-<%
+<jsp:setProperty name="data" property="*"/><%
 
 DatabaseOperations dbop = new DatabaseOperations();
 
@@ -10,6 +9,8 @@ if (data.getGuid() != null) {
 		dbop.updateEntryValidStatus(data.getGuid(), true);
 	else if (data.getAction().equals("invalidate"))
 		dbop.updateEntryValidStatus(data.getGuid(), false);
+	else if (data.getAction().equals("delete"))
+		dbop.deleteActor(data.getGuid());
 }
 %>
 <script language="javascript" type="text/javascript">

@@ -161,24 +161,14 @@ input.greenbutton
                 	%>
                     <tr BGCOLOR="#FFFF99">
 					<td align="center">
-					<form action="secure/validate.jsp" method="POST" name="<%= act_guid %>">
-					<input type="hidden" name="guid" value="<%= act_guid %>" />
 					<%
 					if ("True".equals(act_verified)) {
 					%>
 					Yes<br/>
-					<input type="submit" value="Invalidate"/>
-					<input type="hidden" name="action" value="invalidate" />
-					</form>
-					</td>
 					<%
 					} else {
 					%>
 					No<br/>
-					<input type="submit" value="Validate" />
-					<input type="hidden" name="action" value="validate" />							
-					</form>
-					</td>
 					<%
 					}
                 }
@@ -186,24 +176,14 @@ input.greenbutton
             		%>
 	                <tr BGCOLOR="#D2FFC4">
 					<td align="center">
-					<form action="secure/validate.jsp" method="POST" name="<%= act_guid %>">
-					<input type="hidden" name="guid" value="<%= act_guid %>" />
 					<%
 					if ("True".equals(act_verified)) {
 					%>
 					Yes<br/>
-					<input type="submit" value="Invalidate"/>
-					<input type="hidden" name="action" value="invalidate" />
-					</form>
-					</td>
 					<%
 					} else {
 					%>
 					No<br/>
-					<input type="submit" value="Validate" />
-					<input type="hidden" name="action" value="validate" />							
-					</form>
-					</td>
 					<%
 					}
                 }
@@ -212,32 +192,29 @@ input.greenbutton
             	%>
                 <tr BGCOLOR="#FFB5B5">
 				<td align="center">
-				<form action="secure/validate.jsp" method="POST" name="<%= act_guid %>">
-				<input type="hidden" name="guid" value="<%= act_guid %>" />
 				<%
 				if ("True".equals(act_verified)) {
 				%>
 				Yes<br/>
-				<input type="submit" value="Invalidate"/>
-				<input type="hidden" name="action" value="invalidate" />
-				</form>
-				</td>
 				<%
 				} else {
 				%>
 				No<br/>
-				<input type="submit" value="Validate" />
-				<input type="hidden" name="action" value="validate" />							
-				</form>
-				</td>
 				<%
 				}
             }
-
-            out.println("<td align=\"center\">" + act_name + "</td>");
-            out.println("<td align=\"center\">" + act_guid + "</td>");
-            out.println("<td align=\"center\">" + actor_type + "</td>");
-            out.println("<td align=\"center\">" + act_desc + "</td>");
+%>
+			<form action="secure/validate.jsp" method="POST" name="<%= act_guid %>">
+			<input type="hidden" name="guid" value="<%= act_guid %>" />
+			<input type="hidden" name="action" value="manage" />
+			<input type="submit" value="Manage" />
+			</form>
+			</td>
+            <td align="center"><%= act_name %></td>
+            <td align="center"><%= act_guid %></td>
+            <td align="center"><%= actor_type %></td>
+            <td align="center"><%= act_desc %></td>
+<%
             if(act_soapaxis2url.equalsIgnoreCase("None")){
                     out.println("<td align=\"center\">" + act_soapaxis2url + "</td>");
             }

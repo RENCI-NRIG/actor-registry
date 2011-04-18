@@ -494,6 +494,9 @@ public class DatabaseOperations {
     // insert version for heartbeats; The method name is confusing; the semantic is to insert the most recent last update date for the actor
     public String insertHeartbeat(String act_guid){
 
+    	if (act_guid == null)
+    		return "STATUS: ERROR; Actor guid is null";
+    	
         log.debug("Inside DatabaseOperations: insertHeartbeat() - inserting heartbeats");
 
         Connection conn = null;
@@ -575,20 +578,28 @@ public class DatabaseOperations {
 	/**
 	 * Return information about actors as map indexed by actor name. If essential only set, don't
 	 * return RDFs and descriptions
-	 * @param actorType
-	 * @param essentialOnly
+	 * @param actorType - one of 'actors', 'sms', 'brokers' or 'ams'
+	 * @param validOnly - only admin-validated actors are included
+	 * @param essentialOnly - provide only name, type, location and certificate
 	 * @return
 	 */
     public Map<String, Map<String, String>> queryMap(String actorType, boolean validOnly, boolean essentialOnly) {
     	
     	HashMap<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
 
+    	if (actorType == null) {
+    		result.put("STATUS", new HashMap<String, String>() {
+            	{
+            		put("STATUS", "Unknown actor type");
+            	}
+    		});
+    		return result;
+    	}
+    		
     	log.debug("Inside DatabaseOperations: query() - query for Actor of Type: " + actorType);
-
         Connection conn = null;
 
         try{
-            
             //System.out.println("Trying to get a new instance");
             log.debug("Inside DatabaseOperations: query() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
@@ -648,7 +659,7 @@ public class DatabaseOperations {
             	nonNullMapPut(tmpMap, ActorType, actor_type);
             	
             	nonNullMapPut(tmpMap, ActorLocation, srs.getString("act_soapaxis2url"));
-            	nonNullMapPut(tmpMap, ActorPubkey, srs.getString("act_pubkey"));
+
             	nonNullMapPut(tmpMap, ActorCert64, srs.getString("act_cert64"));
             	
             	if (!essentialOnly) {
@@ -658,6 +669,7 @@ public class DatabaseOperations {
                 	nonNullMapPut(tmpMap, ActorClazz, srs.getString("act_class"));
                 	nonNullMapPut(tmpMap, ActorMapperclass, srs.getString("act_mapper_class"));
                 	nonNullMapPut(tmpMap, ActorDesc, srs.getString("act_desc"));
+                	nonNullMapPut(tmpMap, ActorPubkey, srs.getString("act_pubkey"));
             	}
             	// FIXME: hard code protocol for now
             	nonNullMapPut(tmpMap, ActorProtocol, SOAPAXIS2_PROTOCOL);
@@ -707,13 +719,16 @@ public class DatabaseOperations {
     /**
      * Get data on one actor
      * @param act_guid
-     * @param essentialOnly
+     * @param essentialOnly - provide only name, type, location and certificate
      * @return
      */
     public Map<String, String> queryMapForGuid(String act_guid, boolean essentialOnly) {
-    	
+
     	Map<String, String> tmpMap = new HashMap<String, String>();
 
+    	if (act_guid == null) 
+    		return tmpMap;
+    	
         Connection conn = null;
 
         try{
@@ -751,7 +766,6 @@ public class DatabaseOperations {
             	nonNullMapPut(tmpMap, ActorType, actor_type);
             	
             	nonNullMapPut(tmpMap, ActorLocation, srs.getString("act_soapaxis2url"));
-            	nonNullMapPut(tmpMap, ActorPubkey, srs.getString("act_pubkey"));
             	nonNullMapPut(tmpMap, ActorCert64, srs.getString("act_cert64"));
             	
             	if (!essentialOnly) {
@@ -761,6 +775,7 @@ public class DatabaseOperations {
                 	nonNullMapPut(tmpMap, ActorClazz, srs.getString("act_class"));
                 	nonNullMapPut(tmpMap, ActorMapperclass, srs.getString("act_mapper_class"));
                 	nonNullMapPut(tmpMap, ActorDesc, srs.getString("act_desc"));
+                	nonNullMapPut(tmpMap, ActorPubkey, srs.getString("act_pubkey"));
             	}
             	// FIXME: hard code protocol for now
             	nonNullMapPut(tmpMap, ActorProtocol, SOAPAXIS2_PROTOCOL);
@@ -796,6 +811,9 @@ public class DatabaseOperations {
     
     private boolean checkExistingGuid(String input_act_guid){
 
+    	if (input_act_guid == null)
+    		return false;
+    	
        log.debug("Inside DatabaseOperations: checkExistingGuid()");
 
        Connection conn = null;
@@ -845,6 +863,9 @@ public class DatabaseOperations {
 
     private String getSoapAxis2Url(String input_act_guid){
 
+    	if (input_act_guid == null)
+    		return null;
+    	
         log.debug("Inside DatabaseOperations: getSoapAxis2Url()");
 
         String resSoapAxis2Url = null;
@@ -895,6 +916,9 @@ public class DatabaseOperations {
 
     private boolean checkIP(String clientIP, String act_soapaxis2url){
 
+    	if ((clientIP == null) || (act_soapaxis2url == null))
+    		return false;
+    	
         log.debug("Inside DatabaseOperations: checkIP()");
 
         String[] splitSoapUrl = act_soapaxis2url.split("//");
@@ -938,11 +962,14 @@ public class DatabaseOperations {
 
     /**
      * Update a status of a particular entry ('True' means valid, anything else, invalid)
-     * @param guid
-     * @param valid
+     * @param input_act_guid - actor guid
+     * @param valid - True for Valid, False for Invalid
      */
     public void updateEntryValidStatus(String input_act_guid, boolean valid) {
 
+    	if (input_act_guid == null)
+    		return;
+    	
         log.info("Setting status of actor " + input_act_guid + " to " + valid);
         Connection conn = null;
         String tableValue = null;
@@ -984,6 +1011,41 @@ public class DatabaseOperations {
          }
     }
    
+    /**
+     * Delete a row for this actor
+     * @param input_act_guid - actor guid
+     */
+    public void deleteActor(String input_act_guid) {
+    	if (input_act_guid == null)
+    		return;
+    	Connection conn = null;
+    	
+        try{
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            conn = DriverManager.getConnection (url, userName, password);
+
+            PreparedStatement pStat = conn.prepareStatement("DELETE FROM Actors WHERE act_guid = ? LIMIT 1");
+            pStat.setString(1, input_act_guid);
+            if (pStat.executeUpdate() != 1)
+           	 log.error("Unable to delete entry for actor " + input_act_guid);
+            
+        }
+        catch(Exception e){
+            log.error("DatabaseOperations: deleteActor() - Cannot connect to database server");
+
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
+    }
+    
     /**
      * check the validity of an entry in a map
      * @param m
