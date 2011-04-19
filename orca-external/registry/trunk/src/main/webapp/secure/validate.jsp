@@ -121,20 +121,23 @@ function showWarning(html) {
 <form id="actionform" name="actionform" action="validate-action.jsp">
 <input type="hidden" name="guid" value="<%= act_guid %>" />
 <input type="hidden" id="action" name="action" value="manage" />
+<table width="600px"><tr><td>
 <%
 			if ("True".equals(tmpMap.get(DatabaseOperations.ActorVerified))) {
 %>
-<input type="button" value="Invalidate" onClick="submitForm('invalidate')" onMouseOver="showWarning('<h2 style=color:red>You are about to invalidate this actor!</h2>')" onMouseOut="showWarning('')" />
-
+<input type="button" value="Invalidate" onClick="submitForm('invalidate')" onMouseOver="showWarning('<h2 style=color:red>You are about to INVALIDATE this actor!</h2>')" onMouseOut="showWarning('')" />
 <%
 			} else {
 %>
-<input type="button" value="Validate" onClick="submitForm('validate')" onMouseOver="showWarning('<h2 style=color:green>You are about to validate this actor!</h2>')"  onMouseOut="showWarning('')"/>
+<input type="button" value="Validate" onClick="submitForm('validate')" onMouseOver="showWarning('<h2 style=color:green>You are about to VALIDATE this actor!</h2>')"  onMouseOut="showWarning('')"/>
 <%
 			}
 %>
-<input type="button" name="Delete" value="Delete" onClick="submitForm('delete')" onMouseOver="showWarning('<h2 style=color:red>You are about to delete this actor from the database!</h2>')"  onMouseOut="showWarning('')"/>
+</td><td>
+<input type="button" name="Delete" value="Delete" onClick="submitForm('delete')" onMouseOver="showWarning('<h2 style=color:red>You are about to DELETE this actor from the database!</h2>')"  onMouseOut="showWarning('')"/>
+</td><td>
 <input type="button" name="Cancel" value="Cancel" onClick="window.location='../actors.jsp';"/>
+</td></tr></table>
 </form>
 <%		
 		}

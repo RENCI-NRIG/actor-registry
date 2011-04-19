@@ -99,7 +99,7 @@ public class DatabaseOperations {
         }
         catch(Exception e){
             //System.err.println ("Cannot connect to database server");
-            log.error("Cannot connect to database server");
+            log.error("Cannot connect to database server: " + e.toString());
         }
         finally{
             if (conn != null){
@@ -144,7 +144,7 @@ public class DatabaseOperations {
         }
         catch(Exception e){
             //System.err.println ("Cannot query the database server");
-            log.error("Cannot query the database server");
+            log.error("Cannot query the database server: " + e.toString());
         }
         finally{
             if (conn != null){
@@ -183,11 +183,11 @@ public class DatabaseOperations {
     		act_desc = "No description";
     	}
     	
-        log.debug("Inside DatabaseOperations: insert() - inserting actors and their properties");
+        log.debug("Inside DatabaseOperations: insert() - inserting actors and their properties for guid " + act_guid);
         String status = STATUS_SUCCESS;
         Connection conn = null;
 
-        try{            
+        try {            
             // Query the Actors table to find out if act_guid already present
             // If act_guid already present, check if the ip address of the client 
             // matches the IP address returned by InetAddress.getByName(act_soapaxis2url - the extracted portion of soapaxis2url)
@@ -222,7 +222,7 @@ public class DatabaseOperations {
                 humanReadableIP = splitResultGetByName[0];
                 numericIP = splitResultGetByName[1];
             } catch (UnknownHostException ex) {
-                ex.printStackTrace();
+                log.error("Error converting IP address: " + ex.toString());
             	return "STATUS: ERROR; Exception encountered";
             }
 
@@ -235,7 +235,8 @@ public class DatabaseOperations {
             else{
                 if (ipSoapUrl.equalsIgnoreCase("localhost")){ // Special check: if the soapaxis url is localhost (implying test deployment) set production deployment as false
                     insertEntry = true;
-                    act_production_deployment = FALSE_STRING;
+                    // FIXME: set to FALSE_STRING before deploying
+                    act_production_deployment = TRUE_STRING;
                 }
                 else {
                     //System.out.println("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment. INSERT Failed !!!");
@@ -263,7 +264,7 @@ public class DatabaseOperations {
 
                 if(!actorExists) { // New actor
                 	PreparedStatement pStat = conn.prepareStatement("INSERT into `Actors` ( `act_name` , `act_guid` , `act_type`, `act_desc`, `act_soapaxis2url`, `act_class`, `act_mapper_class`, `act_pubkey`, `act_cert64`, `act_production_deployment`, `act_last_update`, `act_verified`) values " +
-                			 "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                			 "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 	pStat.setString(1, act_name);
                 	pStat.setString(2, act_guid);
                 	pStat.setString(3, act_type);
@@ -280,33 +281,47 @@ public class DatabaseOperations {
                 }
                 else{ // Existing actor
                     // get ALL known entries
-                	Map<String, Map<String, String>> res = queryMap(act_guid, false, false);
+                	Map<String, String> res = queryMapForGuid(act_guid, false);
                 	
                 	// update if necessary: only location  and description can be updated
-                	if (!res.get(ActorLocation).equals(act_soapaxis2url) || !res.get(ActorDesc).equals(act_desc)) {
+                	boolean needUpdate = false;
+                	if (!res.get(ActorLocation).equals(act_soapaxis2url))
+                		needUpdate = true;
+                	
+                	if (res.get(ActorDesc) == null) { 
+                		if (act_desc != null)
+                			needUpdate = true;
+                	} else
+                		if (!res.get(ActorDesc).equals(act_desc))
+                			needUpdate = true;
+                			
+                	if (needUpdate) {
+                		log.debug("Updating description or location for actor " + act_guid);
                 		PreparedStatement pStat = conn.prepareStatement("UPDATE Actors SET act_soapaxis2url = ?, act_desc = ?, act_last_update = ? WHERE act_guid = ?");
                 		pStat.setString(1, act_soapaxis2url);
                 		pStat.setString(2, act_desc);
                 		pStat.setString(3, act_last_update);
                 		pStat.setString(4, act_guid);
                 		pStat.execute();
-                		
                 	} else {
                 		// if any other mismatch - return error
                 		if (!res.get(ActorName).equals(act_name) || !res.get(ActorClazz).equals(act_class) || 
                 				!res.get(ActorMapperclass).equals(act_mapper_class) || 
-                				!res.get(ActorPubkey).equals(act_pubkey) || !res.get(ActorCert64).equals(act_cert64))
+                				!res.get(ActorPubkey).equals(act_pubkey) || !res.get(ActorCert64).equals(act_cert64)) {
                 			status = "STATUS: ERROR; Mimatch to previous registration for this guid. Please change the guid and generate new certificate;";
-                		else
+                			log.error("Error inserting information for actor " + act_name + ":" + act_guid + " due to mismatch to previous registration");
+                		}
+                		else {
                 			// otherwise simply insert heartbeat for this guid
                 			insertHeartbeat(act_guid);
+                		}
                 	}
                 }
             }
         }
         catch(Exception e){
             //System.err.println ("Error inserting into Actors table");
-            log.error("DatabaseOperations: insert() - Error inserting into Actors table");
+            log.error("DatabaseOperations: insert() - Error inserting into Actors table: " + e.toString());
             status = "STATUS: ERROR; Exception encountered during insert";
         }
         finally{
@@ -335,7 +350,7 @@ public class DatabaseOperations {
     	if ((act_guid==null) || (act_full_rdf == null) || (act_abstract_rdf==null) || (act_allocatable_units==null))
     		return "STATUS: ERROR; Invalid parameters";
     	
-        log.debug("Inside DatabaseOperations: insertRdfs() - inserting abstract rdf, full rdf and allocatable units");
+        log.debug("Inside DatabaseOperations: insertRdfs() - inserting abstract rdf, full rdf and allocatable units for guid " + act_guid);
 
         Connection conn = null;
         String status = STATUS_SUCCESS;
@@ -391,7 +406,7 @@ public class DatabaseOperations {
         }
         catch(Exception e){
             //System.err.println ("Error inserting Ndl into Actors table");
-            log.error("Inside DatabaseOperations: insertRdfs() - Exception while inserting Ndl into Actors table");
+            log.error("Inside DatabaseOperations: insertRdfs() - Exception while inserting Ndl into Actors table: " + e.toString());
             status = "STATUS: ERROR; Exception encountered while inserting NDL";
         }
         finally{
@@ -419,7 +434,7 @@ public class DatabaseOperations {
        	if ((act_guid==null) || (act_full_rdf == null) || (act_abstract_rdf==null))
     		return "STATUS: ERROR; Invalid parameters";
  
-    	log.debug("Inside DatabaseOperations: insertRdfs() - inserting abstract rdf and full rdf");
+    	log.debug("Inside DatabaseOperations: insertRdfs() - inserting abstract rdf and full rdf for guid " + act_guid);
 
         Connection conn = null;
         String status = STATUS_SUCCESS;
@@ -473,7 +488,7 @@ public class DatabaseOperations {
         }
         catch(Exception e){
             //System.err.println ("Error inserting Ndl into Actors table");
-            log.error("Inside DatabaseOperations: insertRdfs() - Exception while inserting Ndl into Actors table");
+            log.error("Inside DatabaseOperations: insertRdfs() - Exception while inserting Ndl into Actors table " + e.toString());
             status = "STATUS: ERROR; Exception encountered while inserting Ndl";
         }
         finally{
@@ -497,7 +512,7 @@ public class DatabaseOperations {
     	if (act_guid == null)
     		return "STATUS: ERROR; Actor guid is null";
     	
-        log.debug("Inside DatabaseOperations: insertHeartbeat() - inserting heartbeats");
+        log.debug("Inside DatabaseOperations: insertHeartbeat() - inserting heartbeats for " + act_guid);
 
         Connection conn = null;
         String status = STATUS_SUCCESS;
@@ -516,7 +531,7 @@ public class DatabaseOperations {
             String act_soapaxis2url = getSoapAxis2Url(act_guid);
             if(act_soapaxis2url == null){
                 //System.out.println("Actor with guid: " + act_guid + " doesn't have a soapaxis2url");
-                log.error("DatabaseOperations: inserHeartbeatt() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
+                log.error("DatabaseOperations: inserHeartbeat() - " + "Actor with guid: " + act_guid + " doesn't have a soapaxis2url; Insert failed");
                 return "STATUS: ERROR; Actor does not have a soapaxis2 URL";
             }
 
@@ -551,7 +566,7 @@ public class DatabaseOperations {
         }
         catch(Exception e){
             //System.err.println ("Error inserting heartbeats");
-            log.error("Inside DatabaseOperations: insertHeartbeat() - Exception while inserting heartbeats");
+            log.error("Inside DatabaseOperations: insertHeartbeat() - Exception while inserting heartbeats " + e.toString());
             status = "STATUS: ERROR; Exception encountered while inserting";
         }
         finally{
@@ -596,18 +611,18 @@ public class DatabaseOperations {
     		return result;
     	}
     		
-    	log.debug("Inside DatabaseOperations: query() - query for Actor of Type: " + actorType);
+    	log.debug("Inside DatabaseOperations: queryMap() - query for Actor of Type: " + actorType);
         Connection conn = null;
 
         try{
             //System.out.println("Trying to get a new instance");
-            log.debug("Inside DatabaseOperations: query() - Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: queryMap() - Trying to get a new instance");
             Class.forName ("com.mysql.jdbc.Driver").newInstance ();
             //System.out.println("Trying to get a database connection");
-            log.debug("Inside DatabaseOperations: query() - Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: queryMap() - Trying to get a database connection");
             conn = DriverManager.getConnection (url, userName, password);
             //System.out.println ("Database connection established");
-            log.debug("Inside DatabaseOperations: query() - Database connection established");
+            log.debug("Inside DatabaseOperations: queryMap() - Database connection established");
 
             Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
 
@@ -831,9 +846,9 @@ public class DatabaseOperations {
             pStat.setString(1, input_act_guid);
             ResultSet srs = pStat.executeQuery();
             
-            while (srs.next()) {
+            if (srs.next()) {
                 String act_guid = srs.getString("act_guid");
-                if(act_guid.equalsIgnoreCase(input_act_guid)){
+                if(act_guid.equalsIgnoreCase(input_act_guid)) {
                     //System.out.println("Actor with guid = " + input_act_guid + "  already exists");
                     log.debug("DatabaseOperations: checkExistingGuid() - Actor with guid = " + input_act_guid + "  already exists");
                     guidExists = true;
@@ -842,7 +857,7 @@ public class DatabaseOperations {
         }
         catch(Exception e){
             //System.err.println ("Cannot connect to database server");
-            log.error("DatabaseOperations: checkExistingGuid() - Cannot connect to database server");
+            log.error("DatabaseOperations: checkExistingGuid() - Cannot connect to database server: " + e.toString());
         }
         finally{
             if (conn != null){
@@ -879,24 +894,22 @@ public class DatabaseOperations {
             conn = DriverManager.getConnection (url, userName, password);
             //System.out.println ("Database connection established");
 
-            Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
-
-            ResultSet srs = null;
-            srs = stmt.executeQuery("SELECT * FROM Actors");
-
-            while (srs.next()) {
+            PreparedStatement pStat = conn.prepareStatement("SELECT * FROM Actors WHERE act_guid= ?");
+            pStat.setString(1, input_act_guid);
+            ResultSet srs = pStat.executeQuery();
+            
+            if (srs.next()) {
                 String act_guid = srs.getString("act_guid");
-                if(act_guid.equalsIgnoreCase(input_act_guid)){
-                    resSoapAxis2Url = srs.getString("act_soapaxis2url");
-                    //System.out.println("soapaxis2url from db = " + resSoapAxis2Url);
-                    log.debug("DatabaseOperations: getSoapAxis2Url() - soapaxis2url from db = " + resSoapAxis2Url);
+                if(act_guid.equalsIgnoreCase(input_act_guid)) {
+                	resSoapAxis2Url = srs.getString("act_soapaxis2url");
+                	log.debug("DatabaseOperations: getSoapAxis2Url() - soapaxis2url from db = " + resSoapAxis2Url + " for guid " + input_act_guid);
                 }
             }
 
         }
         catch(Exception e){
             //System.err.println ("Cannot connect to database server");
-            log.error("DatabaseOperations: getSoapAxis2Url() - Cannot connect to database server");
+            log.error("DatabaseOperations: getSoapAxis2Url() - Cannot connect to database server: " + e.toString());
         }
         finally{
             if (conn != null){
@@ -937,7 +950,7 @@ public class DatabaseOperations {
             humanReadableIP = splitResultGetByName[0];
             numericIP = splitResultGetByName[1];
         } catch (UnknownHostException ex) {
-            ex.printStackTrace();
+            log.error("Error converting IP address: " + ex.toString());
         }
 
         boolean result = false;
@@ -995,7 +1008,7 @@ public class DatabaseOperations {
          }
          catch(Exception e){
              //System.err.println ("Cannot connect to database server");
-             log.error("DatabaseOperations: updateEntryValidStatus() - Cannot connect to database server");
+             log.error("DatabaseOperations: updateEntryValidStatus() - Cannot connect to database server: " + e.toString());
 
          }
          finally{
@@ -1031,7 +1044,7 @@ public class DatabaseOperations {
             
         }
         catch(Exception e){
-            log.error("DatabaseOperations: deleteActor() - Cannot connect to database server");
+            log.error("DatabaseOperations: deleteActor() - Cannot connect to database server: " + e.toString());
 
         }
         finally{
