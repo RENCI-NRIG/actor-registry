@@ -479,10 +479,11 @@ public class DatabaseOperations {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 String act_last_update = sdf.format(cal.getTime());
 
-                PreparedStatement pStat = conn.prepareStatement("UPDATE Actors SET act_abstract_rdf= ?, act_full_rdf= ?, act_last_update= ?, WHERE act_guid= ?");
+                PreparedStatement pStat = conn.prepareStatement("UPDATE Actors SET act_abstract_rdf= ?, act_full_rdf= ?, act_last_update= ? WHERE act_guid= ?");
                 pStat.setString(1, act_abstract_rdf);
                 pStat.setString(2, act_full_rdf);
                 pStat.setString(3, act_last_update);
+                pStat.setString(4, act_guid);
                 pStat.execute();
             }
         }
