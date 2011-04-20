@@ -235,8 +235,8 @@ public class DatabaseOperations {
             else{
                 if (ipSoapUrl.equalsIgnoreCase("localhost")){ // Special check: if the soapaxis url is localhost (implying test deployment) set production deployment as false
                     insertEntry = true;
-                    // FIXME: set to FALSE_STRING before deploying
-                    act_production_deployment = TRUE_STRING;
+                    // FIXME: set to FALSE_STRING before deploying otherwise localhost actors will be considered valid
+                    act_production_deployment = FALSE_STRING;
                 }
                 else {
                     //System.out.println("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment. INSERT Failed !!!");
@@ -699,7 +699,7 @@ public class DatabaseOperations {
                 String act_verified = srs.getString("act_verified");
                 nonNullMapPut(tmpMap, ActorVerified, act_verified);
                 
-            	// save the result 
+            	// save the result if it is a valid entry
                 if (validOnly && isValidEntry(tmpMap))
                 	result.put(srs.getString("act_guid"), tmpMap);
                 else if (!validOnly)
