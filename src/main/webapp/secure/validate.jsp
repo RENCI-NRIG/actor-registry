@@ -100,11 +100,11 @@ function showWarning(html) {
 <%
 			if ("True".equals(tmpMap.get(DatabaseOperations.ActorVerified))) {
 %>
-<font style="color:green">Validated</font></h3>
+<font style="color:green">Verified</font></h3>
 <%
 			} else {
 %>
-<font style="color:red">Not validated</font></h3>
+<font style="color:red">Not verified</font></h3>
 <%
 			}
 %>
