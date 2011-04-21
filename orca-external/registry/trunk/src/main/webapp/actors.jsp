@@ -62,18 +62,18 @@ input.greenbutton
 
 <table class="pretty">
 <tr>
-<th align="center"><b>Admin<br/>Validated</b></th>
-<th align="center"><b>Actor Name</b></th>
-<th align="center"><b><font color="red">Actor GUID</font></b></th>
-<th align="center"><b>Actor Type</b></th>
-<th align="center"><b>Actor Description</b></th>
-<th align="center"><b>Actor SOAPAxis2 URL</b></th>
-<th align="center"><b>Actor Class</b></th>
-<th align="center"><b>Actor Policy</b></th>
-<th align="center"><b>Actor Public Key</b></th>
-<th align="center"><b>Actor Certificate</b></th>
-<th align="center"><b>Abstract Site NDL</b></th>
-<th align="center"><b>Full Site NDL</b></th>
+<th align="center"><b>Admin<br/>Verified</b></th>
+<th align="center" width="100"><b>Actor Name</b></th>
+<th align="center" width="150"><b><font color="red">Actor GUID</font></b></th>
+<th align="center" width="150"><b>Actor Type</b></th>
+<th align="center" width="150"><b>Actor Description</b></th>
+<th align="center" width="100"><b>Actor SOAPAxis2 URL</b></th>
+<th align="center" width="150"><b>Actor Class</b></th>
+<th align="center" width="150"><b>Actor Policy</b></th>
+<th align="center" width="100"><b>Actor Public Key</b></th>
+<th align="center" width="100"><b>Actor Certificate</b></th>
+<th align="center" width="100"><b>Abstract Site NDL</b></th>
+<th align="center" width="100"><b>Full Site NDL</b></th>
 </tr>
 
 <% 
@@ -221,8 +221,8 @@ input.greenbutton
             else {
                     out.println("<td align=\"center\">" + "<a href=\"" + act_soapaxis2url + "\">Link</a></td>");
             }
-            out.println("<td align=\"center\">" + act_class + "</td>");
-            out.println("<td align=\"center\">" + act_mapper_class + "</td>");
+            out.println("<td align=\"center\" width=\"150\" style=\"WORD-BREAK:BREAK-ALL;\">" + act_class + "</td>");
+            out.println("<td align=\"center\" width=\"150\" style=\"WORD-BREAK:BREAK-ALL;\">" + act_mapper_class + "</td>");
             //out.println("<td align=\"center\">" + "<a href=\"" + keyFileName + "\">Download Public Key</a></td>");
             out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showString=" + escaped_act_pubkey + "\">Click for Public Key</a></td>");
             out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showString=" + escaped_act_cert64 + "\">Click for Actor Certificate</a></td>");

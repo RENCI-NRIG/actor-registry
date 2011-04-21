@@ -187,6 +187,12 @@ public class DatabaseOperations {
         String status = STATUS_SUCCESS;
         Connection conn = null;
 
+        // check for name duplicate
+        if (checkNameDuplicate(act_name, act_guid)) {
+        	log.error("This registration is invalid, actor " + act_name + "/" + act_guid + " will not be allowed to register");
+        	return "STATUS: ERROR; duplicate actor name detected";
+        }
+        
         try {            
             // Query the Actors table to find out if act_guid already present
             // If act_guid already present, check if the ip address of the client 
@@ -928,6 +934,61 @@ public class DatabaseOperations {
         
     }
 
+    /**
+     * Check if the database already contains an actor with the same name and different guid
+     * @param name
+     * @return
+     */
+    private boolean checkNameDuplicate(String input_act_name, String input_act_guid) {
+
+    	if ((input_act_name == null) || (input_act_guid == null))
+    		return false;
+    	
+        log.debug("Inside DatabaseOperations: checkNameDuplicate()");
+
+        Connection conn = null;
+
+        try{
+
+            //System.out.println("Trying to get a new instance");
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            //System.out.println("Trying to get a database connection");
+            conn = DriverManager.getConnection (url, userName, password);
+            //System.out.println ("Database connection established");
+
+            PreparedStatement pStat = conn.prepareStatement("SELECT act_name, act_guid FROM Actors WHERE act_name= ?");
+            pStat.setString(1, input_act_name);
+            ResultSet srs = pStat.executeQuery();
+            
+            if (srs.next()) {
+                String act_name = srs.getString("act_name");
+                String act_guid = srs.getString("act_guid");
+                if ((act_name == null) || (act_guid == null))
+                	return false;
+                if (!act_guid.equals(input_act_guid) && act_name.equals(input_act_name)) {
+                	log.debug("DatabaseOperations: checkNameDuplicate - actor with guid " + act_guid + " already has the name " + act_name);
+                	return true;
+                }
+            }
+        }
+        catch(Exception e){
+            //System.err.println ("Cannot connect to database server");
+            log.error("DatabaseOperations: checkNameDuplicate() - Cannot connect to database server: " + e.toString());
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
+        return false;
+    }
+    
     private boolean checkIP(String clientIP, String act_soapaxis2url){
 
     	if ((clientIP == null) || (act_soapaxis2url == null))
