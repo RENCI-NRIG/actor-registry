@@ -140,15 +140,13 @@ public void doGet(HttpServletRequest request, HttpServletResponse response) thro
 		  return;
 	  }
 	  
-	  /*
-	  Object certChain = pRequest.getAttribute("javax.servlet.request.X509Certificate");
-	  
 	  System.out.println("Available attributes: --------");
 	  Enumeration<?> names = pRequest.getAttributeNames();
 	  while(names.hasMoreElements())
 		  System.out.println(names.nextElement());
 	  System.out.println("--------");
 	  
+	  Object certChain = pRequest.getAttribute("javax.servlet.request.X509Certificate");
 	  if (certChain != null)
 		  System.out.println("Certificate chain in POST of the client " + pRequest.getRemoteAddr() + " is of type " + certChain.getClass().getCanonicalName());
 	  else
@@ -159,8 +157,8 @@ public void doGet(HttpServletRequest request, HttpServletResponse response) thro
 		  System.out.println("ssl id in POST of the client " + pRequest.getRemoteAddr() + " is null");
 	  else
 		  System.out.println("ssl id in POST of the client " + pRequest.getRemoteAddr() + " is " + sslID);
+	
 	  
-	  */
 	  super.doPost(pRequest, pResponse);
   }
 
