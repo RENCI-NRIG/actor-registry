@@ -284,6 +284,7 @@ public class DatabaseOperations {
                 	pStat.setString(11, act_last_update);
                 	pStat.setString(12, FALSE_STRING);
                 	pStat.execute();
+                	pStat.close();
                 }
                 else{ // Existing actor
                     // get ALL known entries
@@ -309,6 +310,7 @@ public class DatabaseOperations {
                 		pStat.setString(3, act_last_update);
                 		pStat.setString(4, act_guid);
                 		pStat.execute();
+                		pStat.close();
                 	} else {
                 		// if any other mismatch - return error
                 		if (!res.get(ActorName).equals(act_name) || !res.get(ActorClazz).equals(act_class) || 
@@ -407,6 +409,7 @@ public class DatabaseOperations {
                 pStat.setString(4, act_last_update);
                 pStat.setString(5, act_guid);
                 pStat.execute();
+                pStat.close();
             }
             
         }
@@ -491,6 +494,7 @@ public class DatabaseOperations {
                 pStat.setString(3, act_last_update);
                 pStat.setString(4, act_guid);
                 pStat.execute();
+                pStat.close();
             }
         }
         catch(Exception e){
@@ -568,6 +572,7 @@ public class DatabaseOperations {
                 pStat.setString(1, act_last_update);
                 pStat.setString(2, act_guid);
                 pStat.execute();
+                pStat.close();
             }
 
         }
@@ -711,6 +716,7 @@ public class DatabaseOperations {
                 else if (!validOnly)
                 	result.put(srs.getString("act_guid"), tmpMap);
             }
+            srs.close();
         }
         catch(Exception e){
             //System.err.println ("Cannot query the database server");
@@ -811,6 +817,8 @@ public class DatabaseOperations {
                 String act_verified = srs.getString("act_verified");
                 nonNullMapPut(tmpMap, ActorVerified, act_verified);
             }
+            srs.close();
+            pStat.close();
         }
         catch(Exception e){
             //System.err.println ("Cannot query the database server");
@@ -861,6 +869,8 @@ public class DatabaseOperations {
                     guidExists = true;
                 }
             }
+            srs.close();
+            pStat.close();
         }
         catch(Exception e){
             //System.err.println ("Cannot connect to database server");
@@ -912,7 +922,8 @@ public class DatabaseOperations {
                 	log.debug("DatabaseOperations: getSoapAxis2Url() - soapaxis2url from db = " + resSoapAxis2Url + " for guid " + input_act_guid);
                 }
             }
-
+            srs.close();
+            pStat.close();
         }
         catch(Exception e){
             //System.err.println ("Cannot connect to database server");
@@ -970,6 +981,8 @@ public class DatabaseOperations {
                 	return true;
                 }
             }
+            srs.close();
+            pStat.close();
         }
         catch(Exception e){
             //System.err.println ("Cannot connect to database server");
@@ -1066,7 +1079,7 @@ public class DatabaseOperations {
              pStat.setString(2, input_act_guid);
              if (pStat.executeUpdate() != 1)
             	 log.error("Unable to update the state of actor " + input_act_guid);
-             
+             pStat.close();
          }
          catch(Exception e){
              //System.err.println ("Cannot connect to database server");
@@ -1103,7 +1116,7 @@ public class DatabaseOperations {
             pStat.setString(1, input_act_guid);
             if (pStat.executeUpdate() != 1)
            	 log.error("Unable to delete entry for actor " + input_act_guid);
-            
+            pStat.close();
         }
         catch(Exception e){
             log.error("DatabaseOperations: deleteActor() - Cannot connect to database server: " + e.toString());

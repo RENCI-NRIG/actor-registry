@@ -62,7 +62,7 @@ input.greenbutton
 
 <table class="pretty">
 <tr>
-<th align="center"><b>Admin<br/>Verified</b></th>
+<th align="center" width="70"><b>Admin<br/>Verified</b></th>
 <th align="center" width="100"><b>Actor Name</b></th>
 <th align="center" width="150"><b><font color="red">Actor GUID</font></b></th>
 <th align="center" width="150"><b>Actor Type</b></th>
