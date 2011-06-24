@@ -4,6 +4,8 @@
 <html>
 <title>ORCA Actor Registry</title>
 
+<meta http-equiv="refresh" content="30">
+
 <style type="text/css">
 table.pretty {
 margin: 1em 1em 1em 2em;
@@ -46,6 +48,10 @@ input.greenbutton
 <h2><font face="courier, bookman"><center>ORCA Actor Registry</center></font></h2><br>
 
 <center>
+<script language="JavaScript">
+    document.write('<b> This page last updated on ' + (new Date).toLocaleString() + '</b>');
+</script>
+
 <table class="pretty">
 <tr BGCOLOR="#D2FFC4">
 <td align="center">Actor in production mode; Other actors can connect to this actor</td>
