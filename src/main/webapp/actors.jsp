@@ -6,81 +6,72 @@
 
 <meta http-equiv="refresh" content="30">
 
-<style type="text/css">
-table.pretty {
-margin: 1em 1em 1em 2em;
-background: whitesmoke;
-font-family: courier, bookman;
-font-weight: normal;
-font-size: 15px;
-border-collapse: collapse;
-}
-table.pretty th, table.pretty td {
-border: 1px silver solid;
-padding: 0.2em;
-}
-table.pretty th {
-background: gainsboro;
-font-family: Verdana;
-text-align: center;
-}
-table.pretty caption {
-margin-left: inherit;
-margin-right: inherit;
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/fonts/fonts-min.css" /> 
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/paginator/assets/skins/sam/paginator.css" /> 
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/datatable/assets/skins/sam/datatable.css" /> 
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/yahoo-dom-event/yahoo-dom-event.js"></script> 
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/connection/connection-min.js"></script> 
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/json/json-min.js"></script> 
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/element/element-min.js"></script> 
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/paginator/paginator-min.js"></script> 
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/datasource/datasource-min.js"></script> 
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/event-delegate/event-delegate-min.js"></script> 
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/datatable/datatable-min.js"></script> 
+ 
+ <style type="text/css"> 
+/* custom styles for this example */
+.yui-skin-sam .yui-dt-liner { white-space:wrap; } 
+
+/* Class for dead rows */
+.yui-skin-sam .yui-dt tr.deadact,
+.yui-skin-sam .yui-dt tr.deadact td.yui-dt-asc,
+.yui-skin-sam .yui-dt tr.deadact td.yui-dt-desc,
+.yui-skin-sam .yui-dt tr.deadact td.yui-dt-asc,
+.yui-skin-sam .yui-dt tr.deadact td.yui-dt-desc {
+    background-color: #a33;
+    color: #fff;
 }
 
-input.redbutton
-{
-   font-weight:bold;
-   color:#000000;
-   background-color:#FF0000;
+/* class for localhost rows */
+.yui-skin-sam .yui-dt tr.localhost,
+.yui-skin-sam .yui-dt tr.localhost td.yui-dt-asc,
+.yui-skin-sam .yui-dt tr.localhost td.yui-dt-desc,
+.yui-skin-sam .yui-dt tr.localhost td.yui-dt-asc,
+.yui-skin-sam .yui-dt tr.localhost td.yui-dt-desc {
+    background-color: #FFFF99;
+    color: #000;
 }
 
-input.greenbutton
-{
-   font-weight:bold;
-   color:#000000;
-   background-color:#339900;
+/* for pagination */
+#paginated {
+    text-align: center;
 }
-
-</style>
-<body>
+#paginated table {
+    margin-left:auto; margin-right:auto;
+}
+#paginated, #paginated .yui-dt-loading {
+    text-align: center; background-color: transparent;
+}
+</style> 
+ 
+<body class="yui-skin-sam">
 <h2><font face="courier, bookman"><center>ORCA Actor Registry</center></font></h2><br>
 
 <center>
 <script language="JavaScript">
     document.write('<b> This page last updated on ' + (new Date).toLocaleString() + '</b>');
+    var registry = new Array();
 </script>
 
-<table class="pretty">
-<tr BGCOLOR="#D2FFC4">
-<td align="center">Actor in production mode; Other actors can connect to this actor</td>
-</tr>
-<tr BGCOLOR="#FFFF99">
+<table class="yui-dt">
+<tr class="localhost">
 <td align="center">Actor in test mode, using localhost; Other actors can't connect to this actor</td>
 </tr>
-<tr BGCOLOR="#FFB5B5">
+<tr class="deadact">
 <td align="center">Actor not live; Other actors can't connect to this actor</td>
 </tr>
 </table>
 </center>
-
-
-<table class="pretty">
-<tr>
-<th align="center" width="70"><b>Admin<br/>Verified</b></th>
-<th align="center" width="100"><b>Actor Name</b></th>
-<th align="center" width="150"><b><font color="red">Actor GUID</font></b></th>
-<th align="center" width="150"><b>Actor Type</b></th>
-<th align="center" width="150"><b>Actor Description</b></th>
-<th align="center" width="100"><b>Actor SOAPAxis2 URL</b></th>
-<th align="center" width="150"><b>Actor Class</b></th>
-<th align="center" width="150"><b>Actor Policy</b></th>
-<th align="center" width="100"><b>Actor Public Key</b></th>
-<th align="center" width="100"><b>Actor Certificate</b></th>
-<th align="center" width="100"><b>Abstract Site NDL</b></th>
-<th align="center" width="100"><b>Full Site NDL</b></th>
-</tr>
 
 <% 
 	DatabaseOperations dbop = new DatabaseOperations();
@@ -137,9 +128,9 @@ input.greenbutton
         	actor_type = "ORCA Broker";
         }
         if(act_type.equalsIgnoreCase("site")){
-        	actor_type = "ORCA Site Authority / Aggregate Manager (AM)";
+        	actor_type = "ORCA Site Authority /</br> Aggregate Manager (AM)";
 		}
-	
+			
 		//output += "ActorName = " + act_name + " , ActorGUID = " + act_guid + " , ActorType = " + actor_type + " , ActorSOAPAxis2URL = " + act_soapaxis2url + " , ActorClass = " + act_class + " , ActorPolicy = " + act_mapper_class + " , ActorPubkey = " + act_pubkey + " , ActorCert64 = " + act_cert64;
 
         String act_last_update = tmpMap.get(DatabaseOperations.ActorLastUpdate);
@@ -154,107 +145,104 @@ input.greenbutton
         long diffInMinutes = diff / (1000L*60L); // difference in number of minutes
         long diffInHours = diff / (1000L*60L*60L); // differenc in number of hours
 
-        //System.out.println("The entry is " + diff + " milli secs / " + diffInDays + " days old");
-
-
-        if (diffInHours <= 12){ // entry is less than 12 hours old; showing all actors who have registered in the last 12 hours
-
-            String act_production_deployment = tmpMap.get(DatabaseOperations.ActorProduction);
-
-            if (diffInMinutes <= 2){ // live actors
-                if(act_production_deployment.equalsIgnoreCase("False")) { 
-                	// Mark this row in red as a test deployment
-                	%>
-                    <tr BGCOLOR="#FFFF99">
-					<td align="center">
-					<%
-					if ("True".equals(act_verified)) {
-					%>
-					Yes<br/>
-					<%
-					} else {
-					%>
-					No<br/>
-					<%
-					}
-                }
-            	else { // production deployment
-            		%>
-	                <tr BGCOLOR="#D2FFC4">
-					<td align="center">
-					<%
-					if ("True".equals(act_verified)) {
-					%>
-					Yes<br/>
-					<%
-					} else {
-					%>
-					No<br/>
-					<%
-					}
-                }
-            }
-            else { // Potentially dead actor
-            	%>
-                <tr BGCOLOR="#FFB5B5">
-				<td align="center">
-				<%
-				if ("True".equals(act_verified)) {
-				%>
-				Yes<br/>
-				<%
-				} else {
-				%>
-				No<br/>
-				<%
-				}
-            }
-%>
-			<form action="secure/validate.jsp" method="POST" name="<%= act_guid %>">
-			<input type="hidden" name="guid" value="<%= act_guid %>" />
-			<input type="hidden" name="action" value="manage" />
-			<input type="submit" value="Manage" />
-			</form>
-			</td>
-            <td align="center"><%= act_name %></td>
-            <td align="center"><%= act_guid %></td>
-            <td align="center"><%= actor_type %></td>
-            <td align="center"><%= act_desc %></td>
-<%
-            if(act_soapaxis2url.equalsIgnoreCase("None")){
-                    out.println("<td align=\"center\">" + act_soapaxis2url + "</td>");
-            }
-            else {
-                    out.println("<td align=\"center\">" + "<a href=\"" + act_soapaxis2url + "\">Link</a></td>");
-            }
-            out.println("<td align=\"center\" width=\"150\" style=\"WORD-BREAK:BREAK-ALL;\">" + act_class + "</td>");
-            out.println("<td align=\"center\" width=\"150\" style=\"WORD-BREAK:BREAK-ALL;\">" + act_mapper_class + "</td>");
-            //out.println("<td align=\"center\">" + "<a href=\"" + keyFileName + "\">Download Public Key</a></td>");
-            out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showString=" + escaped_act_pubkey + "\">Click for Public Key</a></td>");
-            out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showString=" + escaped_act_cert64 + "\">Click for Actor Certificate</a></td>");
-
+		if (diffInHours <= 12) {
+			String act_production_deployment = tmpMap.get(DatabaseOperations.ActorProduction);
+			String manageText = "";
+			if ("True".equals(act_verified)) 
+				manageText = "Yes</br>";
+			else
+				manageText = "No</br>";
+			manageText+="<form action=\"secure/validate.jsp\" method=\"POST\" name=\"" + act_guid + "\"> " +
+			"<input type=\"hidden\" name=\"guid\" value=\"" + act_guid + "\" /> " +
+			"<input type=\"hidden\" name=\"action\" value=\"manage\" /> " +
+			"<input type=\"submit\" value=\"Manage\" /></form>";
+			
+			String andlLink = "N/A", fndlLink = "N/A";
+			
             if(act_type.equalsIgnoreCase("site")){
-                    if(act_abstract_rdf == null || act_full_rdf ==null){
-                            out.println("<td align=\"center\">" + "Not Available" + "</td>");
-                            out.println("<td align=\"center\">" + "Not Available" + "</td>");
+                    if(act_abstract_rdf == null || act_full_rdf == null){
+                            andlLink = "Not Available";
+                            fndlLink = "Not Available";
                     }
                     else {
-                            out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showFile=" + abstractRdfFileNameShort + "\">Click for Abstract Site NDL</a></td>");
-                            out.println("<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showFile=" + fullRdfFileNameShort + "\">Click for Full Site NDL</a></td>");
+                            andlLink = "<a href=\"http://geni.renci.org:11080/registry?showFile=" + abstractRdfFileNameShort + "\">Click for Abstract Site NDL</a>";
+                            fndlLink = "<td align=\"center\">" + "<a href=\"http://geni.renci.org:11080/registry?showFile=" + fullRdfFileNameShort + "\">Click for Full Site NDL</a></td>";
                     }
             }
-            else {
-                    out.println("<td align=\"center\">" + "N/A" + "</td>");
-                    out.println("<td align=\"center\">" + "N/A" + "</td>");
-            }
-
-            out.println("</tr>");
-
-            //out.println(output);
-        }
-	}
 %>
+<script>
+		registry.push({
+		manage: '<%= manageText %>', 
+		name:'<%= act_name %>', 
+		guid:'<%= act_guid %>', 
+		type:'<%= actor_type %>', 
+		desc:'<%= act_desc %>', 
+		url:'<%= act_soapaxis2url %>', 
+		aclass:'<%= act_class %>', 
+		apolicy:'<%= act_mapper_class %>',
+		aprod: '<%= act_production_deployment %>',
+		pubkey: '<a href="http://geni.renci.org:11080/registry?showString=<%= escaped_act_pubkey %>">Click for Public Key</a>',
+		cert64: '<a href="http://geni.renci.org:11080/registry?showString=<%= escaped_act_cert64 %>">Click for Certificate</a>',
+		andl: '<%= andlLink %>',
+		fndl: '<%= fndlLink %>',
+		amdiff: parseInt('<%= diffInMinutes %>')});
+		
+</script>
+<%
+		}
+	}
+%>		
+ 
+<div id="paginated"></div> 
+ 
+<script type="text/javascript"> 
+// Define a custom row formatter function
+var rowFormatter = function(elTr, oRecord) {
+    if (oRecord.getData('amdiff') > 2) {
+        Dom.addClass(elTr, 'deadact');
+    } else if (oRecord.getData('aprod') == "False")
+		Dom.addClass(elTr, 'localhost'); 
+    return true;
+}; 
+ 
+YAHOO.util.Event.addListener(window, "load", function() {
+    tableListener = function() {
+        var myColumnDefs = [
+        	{key:"manage", label:"Manage"},
+            {key:"name", label:"Name", sortable:true, resizeable:true, width:100},
+            {key:"guid", label:"GUID", sortable:true,resizeable:true, width:250},
+            {key:"type", label:"Type", sortable:true, resizeable:true, width:180},
+            {key:"desc", label:"Description", sortable:true, resizeable:true, width:150},
+            {key:"url", label:"SOAP URL", sortable:true, resizeable:true, width:250},
+ //           {key:"aclass", label:"Class", sortable:true, resizable:true, width:150},
+ //           {key:"apolicy", label:"Policy", sortable:true, resizable:true, width:150},
+            {key:"pubkey", label:"Public Key"},
+            {key:"cert64", label:"Certificate"},
+            {key:"andl", label:"Abstract NDL"},
+            {key:"fndl", label:"Full NDL"}
+        ];
+ 
+        var myDataSource = new YAHOO.util.DataSource(registry);
+        myDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
+        myDataSource.responseSchema = {
+            fields: ["manage", "name", "guid", "type", "desc", "url", "aclass", "apolicy", "amdiff", "aprod", "pubkey", "cert64", "andl", "fndl"]
+        };
+ 
+        var myDataTable = new YAHOO.widget.DataTable("paginated",
+                myColumnDefs, myDataSource, 
+                {formatRow: rowFormatter, draggableColumns:true, 
+                paginator: new YAHOO.widget.Paginator({
+                    rowsPerPage: 15
+                })
+                });
+                
+        return {
+            oDS: myDataSource,
+            oDT: myDataTable
+        };
+    }();
+});
+</script> 
 
-</table>
 </body>
 </html>
