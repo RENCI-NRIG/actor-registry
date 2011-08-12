@@ -22,6 +22,16 @@
 /* custom styles for this example */
 .yui-skin-sam .yui-dt-liner { white-space:wrap; } 
 
+/* Class for un-verified rows */
+.yui-skin-sam .yui-dt tr.unver,
+.yui-skin-sam .yui-dt tr.unver td.yui-dt-asc,
+.yui-skin-sam .yui-dt tr.unver td.yui-dt-desc,
+.yui-skin-sam .yui-dt tr.unver td.yui-dt-asc,
+.yui-skin-sam .yui-dt tr.unver td.yui-dt-desc {
+    background-color: #bbf;
+    color: #fff;
+}
+
 /* Class for dead rows */
 .yui-skin-sam .yui-dt tr.deadact,
 .yui-skin-sam .yui-dt tr.deadact td.yui-dt-asc,
@@ -64,6 +74,9 @@
 </script>
 
 <table class="yui-dt">
+<tr class="unver">
+<td align="center">Actor is unverified; Other actors can't connect to this actor </td>
+</tr>
 <tr class="localhost">
 <td align="center">Actor in test mode, using localhost; Other actors can't connect to this actor</td>
 </tr>
@@ -201,8 +214,11 @@
 var rowFormatter = function(elTr, oRecord) {
     if (oRecord.getData('amdiff') > 2) {
         Dom.addClass(elTr, 'deadact');
-    } else if ((oRecord.getData('aprod') == "False") || (oRecord.getData('verified') == "False"))
+    } else if (oRecord.getData('aprod') == "False") {
 		Dom.addClass(elTr, 'localhost'); 
+		} else if (oRecord.getData('verified') == "False") {
+			Dom.addClass(elTr, 'unver');
+			}
     return true;
 }; 
  
