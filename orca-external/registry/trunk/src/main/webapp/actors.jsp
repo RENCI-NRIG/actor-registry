@@ -4,7 +4,7 @@
 <html>
 <title>ORCA Actor Registry</title>
 
-<meta http-equiv="refresh" content="30">
+<meta http-equiv="refresh" content="120">
 
 <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/fonts/fonts-min.css" /> 
 <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/paginator/assets/skins/sam/paginator.css" /> 
@@ -122,13 +122,13 @@
 
         String actor_type = null;
         if(act_type.equalsIgnoreCase("sm")){
-        	actor_type = "ORCA Service Manager (SM)";                
+        	actor_type = "Service Manager";                
 		}
 		if(act_type.equalsIgnoreCase("broker")){
-        	actor_type = "ORCA Broker";
+        	actor_type = "Broker";
         }
         if(act_type.equalsIgnoreCase("site")){
-        	actor_type = "ORCA Site Authority /</br> Aggregate Manager (AM)";
+        	actor_type = "Site Authority";
 		}
 			
 		//output += "ActorName = " + act_name + " , ActorGUID = " + act_guid + " , ActorType = " + actor_type + " , ActorSOAPAxis2URL = " + act_soapaxis2url + " , ActorClass = " + act_class + " , ActorPolicy = " + act_mapper_class + " , ActorPubkey = " + act_pubkey + " , ActorCert64 = " + act_cert64;
@@ -185,6 +185,7 @@
 		cert64: '<a href="http://geni.renci.org:11080/registry?showString=<%= escaped_act_cert64 %>">Click for Certificate</a>',
 		andl: '<%= andlLink %>',
 		fndl: '<%= fndlLink %>',
+		verified: '<%= act_verified %>',
 		amdiff: parseInt('<%= diffInMinutes %>')});
 		
 </script>
@@ -200,7 +201,7 @@
 var rowFormatter = function(elTr, oRecord) {
     if (oRecord.getData('amdiff') > 2) {
         Dom.addClass(elTr, 'deadact');
-    } else if (oRecord.getData('aprod') == "False")
+    } else if ((oRecord.getData('aprod') == "False") || (oRecord.getData('verified') == "False"))
 		Dom.addClass(elTr, 'localhost'); 
     return true;
 }; 
@@ -208,10 +209,10 @@ var rowFormatter = function(elTr, oRecord) {
 YAHOO.util.Event.addListener(window, "load", function() {
     tableListener = function() {
         var myColumnDefs = [
-        	{key:"manage", label:"Manage"},
+        	{key:"manage", label:"Actor Verified", width: 90},
             {key:"name", label:"Name", sortable:true, resizeable:true, width:100},
             {key:"guid", label:"GUID", sortable:true,resizeable:true, width:250},
-            {key:"type", label:"Type", sortable:true, resizeable:true, width:180},
+            {key:"type", label:"Type", sortable:true, resizeable:true, width:100},
             {key:"desc", label:"Description", sortable:true, resizeable:true, width:150},
             {key:"url", label:"SOAP URL", sortable:true, resizeable:true, width:250},
  //           {key:"aclass", label:"Class", sortable:true, resizable:true, width:150},
@@ -225,15 +226,16 @@ YAHOO.util.Event.addListener(window, "load", function() {
         var myDataSource = new YAHOO.util.DataSource(registry);
         myDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
         myDataSource.responseSchema = {
-            fields: ["manage", "name", "guid", "type", "desc", "url", "aclass", "apolicy", "amdiff", "aprod", "pubkey", "cert64", "andl", "fndl"]
+            fields: ["manage", "name", "guid", "type", "desc", "url", "aclass", "apolicy", "amdiff", "aprod", "pubkey", "cert64", "andl", "fndl", "verified"]
         };
  
         var myDataTable = new YAHOO.widget.DataTable("paginated",
                 myColumnDefs, myDataSource, 
-                {formatRow: rowFormatter, draggableColumns:true, 
+                {formatRow: rowFormatter, 
+                draggableColumns:true, 
+                sortedBy: {key:"name", dir:"asc"},
                 paginator: new YAHOO.widget.Paginator({
-                    rowsPerPage: 15
-                })
+                    rowsPerPage: 15})
                 });
                 
         return {
