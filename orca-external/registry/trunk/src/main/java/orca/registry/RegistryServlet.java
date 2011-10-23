@@ -22,17 +22,17 @@ import org.apache.xmlrpc.webserver.XmlRpcServlet;
 
 public class RegistryServlet extends XmlRpcServlet{
 
-  /**
+	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-//private static final String CONTENT_TYPE = "text/html; charset=windows-1252";
-  //private static final String CONTENT_TYPE = "application/octet-stream";
+	//private static final String CONTENT_TYPE = "text/html; charset=windows-1252";
+	//private static final String CONTENT_TYPE = "application/octet-stream";
 
-  private static ThreadLocal<String> clientIpAddress = new ThreadLocal<String>();
-  private static ThreadLocal<String> sslSessionId = new ThreadLocal<String>();
-  public static final String registryLogProperties="orca.registry.registry";
-  private Logger log = null;
+	private static ThreadLocal<String> clientIpAddress = new ThreadLocal<String>();
+	private static ThreadLocal<String> sslSessionId = new ThreadLocal<String>();
+	public static final String registryLogProperties="orca.registry.registry";
+	private Logger log = null;
 
   @Override
 public void init(ServletConfig config) throws ServletException
