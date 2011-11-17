@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import java.security.cert.X509Certificate;
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
@@ -18,9 +21,12 @@ import org.apache.log4j.PropertyConfigurator;
  */
 public class XmlrpcHandler {
 
-    private static final String ORCA_ACTOR_REGISTRY_VERSION = "ORCA Actor Registry version 2.0 ";
+    private static final String ORCA_ACTOR_REGISTRY_VERSION = "ORCA Actor Registry version 2.1 ";
+    // this is the path to orca/registry/registry.properties
 	public static final String registryLogProperties="orca.registry.registry";
+	public static final String registryStrongCheckingProperty="registry.strongCheck";
     Logger log;
+    private boolean strongCheck = true;
 
     public XmlrpcHandler() {
 
@@ -29,6 +35,8 @@ public class XmlrpcHandler {
         PropertyConfigurator.configure(p);
         log = Logger.getLogger(XmlrpcHandler.class);
         log.debug("Starting logging for Registry XmlrpcHandler");
+        strongCheck = Boolean.getBoolean(p.getProperty(registryStrongCheckingProperty));
+        log.info("Strong certificate checking status is set to " + strongCheck);
     }
 
     /**
@@ -60,8 +68,17 @@ public class XmlrpcHandler {
     public String insert(String act_name, String act_type, String act_guid, String act_desc, String act_soapaxis2url, String act_class, String act_mapper_class, String act_pubkey, String act_cert64){
 
         log.info("Inside XmlrpcHandler: insert() - insert actors and properties from " + act_name + "/" + act_guid);
-        //System.out.println("Inside insert");
-        //System.out.println(act_name + " " + act_type + " " + act_guid + " " + act_desc);
+
+        if (!checkSecure()) {
+    		log.error("Client " + RegistryServlet.getClientIpAddress() + " is not using secure channel for 'insert'. Not allowed.");
+    		return "Update FAILED: you must use SSL-secured channel to update registry contents";
+    	}
+        
+        if (!clientCertCheck(act_guid)) {
+        	log.error("Client " + RegistryServlet.getClientIpAddress() + " with guid " + act_guid + " failed certificate check. Not allowed.");
+        	return "Update FAILED: your certificate did not match what is in the database";
+        }
+    	
         log.debug("Inserting: " + act_name + " " + act_type + " " + act_guid + " " + act_desc);
 
         DatabaseOperations dbop = new DatabaseOperations();
@@ -80,6 +97,17 @@ public class XmlrpcHandler {
     public String insert(String act_guid, String act_abstract_rdf, String act_full_rdf, String act_allocatable_units){
 
         log.info("Inside XmlrpcHandler: insert() - insert abstract rdf, full rdf, allocatable units from " + act_guid);
+        
+        if (!checkSecure()) {
+    		log.info("Client " + RegistryServlet.getClientIpAddress() + " is not using secure channel for 'insert'. Not allowed.");
+    		return "Update FAILED: you must use SSL-secured channel to update registry contents";
+    	}
+        
+        if (!clientCertCheck(act_guid)) {
+        	log.error("Client " + RegistryServlet.getClientIpAddress() + " with guid " + act_guid + " failed certificate check. Not allowed.");
+        	return "Update FAILED: your certificate did not match what is in the database";
+        }
+        
         //System.out.println("Inside insert Ndl with allocatable units");
         //System.out.println("act_guid:" + act_guid + " act_abstract_rdf:" + act_abstract_rdf + " act_full_rdf:" + act_full_rdf + " act_allocatable_units:" + act_allocatable_units);
         log.debug("Inserting: " + "act_guid:" + act_guid + " act_abstract_rdf:" + act_abstract_rdf + " act_full_rdf:" + act_full_rdf + " act_allocatable_units:" + act_allocatable_units);
@@ -98,6 +126,17 @@ public class XmlrpcHandler {
     public String insert(String act_guid, String act_abstract_rdf, String act_full_rdf){
 
         log.info("Inside XmlrpcHandler: insert() - insert abstract rdf, full rdf from " + act_guid);
+        
+        if (!checkSecure()) {
+    		log.info("Client " + RegistryServlet.getClientIpAddress() + " is not using secure channel for 'insert'. Not allowed.");
+    		return "Update FAILED: you must use SSL-secured channel to update registry contents";
+    	}
+        
+        if (!clientCertCheck(act_guid)) {
+        	log.error("Client " + RegistryServlet.getClientIpAddress() + " with guid " + act_guid + " failed certificate check. Not allowed.");
+        	return "Update FAILED: your certificate did not match what is in the database";
+        }
+        
         //System.out.println("Inside insert Ndl");
         //System.out.println("act_guid:" + act_guid + " act_abstract_rdf:" + act_abstract_rdf + " act_full_rdf:" + act_full_rdf);
         log.debug("Inserting: " + "act_guid:" + act_guid + " act_abstract_rdf:" + act_abstract_rdf + " act_full_rdf:" + act_full_rdf);
@@ -113,10 +152,18 @@ public class XmlrpcHandler {
      */
     public String insert(String act_guid){
 
-        //System.out.println("Inside insert Heartbeats");
-        //System.out.println("act_guid:" + act_guid);
-
         log.info("Inside XmlrpdHandler: insert() - insert heartbeats from " + act_guid);
+        
+        if (!checkSecure()) {
+    		log.info("Client " + RegistryServlet.getClientIpAddress() + " is not using secure channel for 'insert'. Not allowed.");
+    		return "Update FAILED: you must use SSL-secured channel to update registry contents";
+    	}
+        
+        if (!clientCertCheck(act_guid)) {
+        	log.error("Client " + RegistryServlet.getClientIpAddress() + " with guid " + act_guid + " failed certificate check. Not allowed.");
+        	return "Update FAILED: your certificate did not match what is in the database";
+        }
+        
         log.debug("Inserting: heartbeats for act_guid: " + act_guid);
         DatabaseOperations dbop = new DatabaseOperations();
         return dbop.insertHeartbeat(act_guid);
@@ -208,27 +255,66 @@ public class XmlrpcHandler {
      * @return
      */
     public String getRegistryVersion() {
-        /*
-        String clientIP = RegistryServlet.getClientIpAddress();
-        try {
-            InetAddress address = InetAddress.getByName("www.renci.org");
-            System.out.println(address.toString());
-            
-            InetAddress address1 = InetAddress.getByName("geni-test.renci.org");
-            System.out.println(address1.toString());
-            InetAddress address2 = InetAddress.getByName("geni-ben.renci.org");
-            System.out.println(address2.toString());            
-        } catch (UnknownHostException ex) {
-            ex.printStackTrace();
-        }
-        */
+
     	return ORCA_ACTOR_REGISTRY_VERSION;
     }
 
-    public String getRegistryVersion(String v){
-        return "hello: " + v;
-       
+    /**
+     * Retrieve certificate chain if available (null if not)
+     * @return
+     */
+    protected X509Certificate[] getActorCerts() {
+    	if (checkSecure()) {
+        	HttpServletRequest pRequest = RegistryServlet.getThreadRequest();
+        	Object certChain = pRequest.getAttribute("javax.servlet.request.X509Certificate");
+    		if (certChain != null) {
+    			return (X509Certificate[])certChain;
+    		}
+    		else {
+    			return null;
+    		}
+    	}
+    	return null;
     }
+    
+    /**
+     * Check if the client is using secure channel
+     * @return
+     */
+    protected boolean checkSecure() {
+    	// if comms are secure, session id will be set
+    	HttpServletRequest pRequest = RegistryServlet.getThreadRequest();
+    	String sslSessionId = (String)pRequest.getAttribute("javax.servlet.request.ssl_session");
 
-
+    	// if ssl session id is present, client using SSL/TLS
+    	if (sslSessionId == null) {
+    		return false;
+    	}
+    	return true;
+    }
+    
+    /**
+     * Check client certificate against the database
+     * @param act_guid
+     * @return
+     */
+    protected boolean clientCertCheck(String act_guid) {
+    	// get the cert chains from SSL
+    	X509Certificate[] chain = getActorCerts();
+    	
+    	if ((chain == null) || (chain.length == 0)) {
+    		if (!strongCheck) {
+    			log.info("Actor " + act_guid + " did not present a valid certificate, strong checking is disabled, proceeding.");
+    			return true;
+    		} else {
+    			log.error("Actor " + act_guid + " did not present a valid certificate, strong checking is enabled, blocking");
+    			return false;
+    		}
+    	}
+    	
+    	// compare the cert
+    	DatabaseOperations dbop = new DatabaseOperations();
+    	// returns true if actor is not in db or if there is a match, false otherwise
+    	return dbop.checkCert(act_guid, chain);
+    }
 }

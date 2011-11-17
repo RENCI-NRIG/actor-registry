@@ -5,7 +5,7 @@ ORCA Actor Registry serves as a snapshot of all available actors deployed in var
 
 Users deploying ORCA containers who want to register their actors in the registry have to add these two properties in container.properties. For example:
 
-registry.url=http://geni-test.renci.org:11080/registry/
+registry.url=https://geni-test.renci.org:11443/registry/
 registry.method=registryService.insert
 
 Registry Servlet:
@@ -28,9 +28,31 @@ The resulting .war file in $ORCA_SRC/registry/target/ can be deployed into tomca
 
 The servlet will be available at http://hostname:11080/registry/ URL. The file ant/build.properties should have the url - http://hostname and port number - 11080. All service methods should be invoked as registryService.methodName. For example a test method String getRegistryVersion() can be invoked as "registryService.getRegistryVersion". 
 
+The web portal will be on http://hostname:11080/registry/actors.jsp
+
 Deployment/undeployment of the servlet webapp does not affect the persistent database state of the registry.
 
 The registry servlet has to be up an running and the URL of the server and the name of the actor insertion method have to be known to ORCA containers before they want to register their actors.
+
+Security
+--------
+
+As of version 2.1, registry validates SSL certificates presented to it by actors by comparing the certificate in the SSL connection against the one given by the actor as part of insert operation. 
+
+There are two checking modes - strong and weak (set using the property registry.strongChec in registry.properties). In weak  mode, if a certificate is not presented at update, it is allowed to proceed anyway (although a mismatch is not allowed). In strong mode clients must present an SSL client certificate to be allowed to update the database.
+
+Registry also does weaker types of checking for clients to come from the IP address matching the SOAP URL presented in the insert operation.
+
+Only update operations require SSL. Query operations can be performed on non-SSL connections.
+
+In order to properly use security features, Tomcat 7 is required, because it allows overriding the TrustManager. The following declaration needs to be made in the Connector (conf/server.xml) and AllTrustingTrustManager must be compiled and the resulting class file put under $CATALINA_HOME/lib:
+
+    <Connector port="11443" protocol="HTTP/1.1" SSLEnabled="true"
+               maxThreads="150" scheme="https" secure="true"
+                keystoreFile="ssl/trusted.jks" keystorePass="changeit"
+                keyAlias="tomcat"
+                trustManagerClassName="AllTrustingTrustManager"
+               clientAuth="want" sslProtocol="TLS" />
 
 Testing Servlet (sample client code):
 ----------------

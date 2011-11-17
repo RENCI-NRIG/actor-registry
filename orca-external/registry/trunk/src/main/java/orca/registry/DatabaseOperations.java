@@ -7,6 +7,8 @@ package orca.registry;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -140,6 +142,7 @@ public class DatabaseOperations {
                 //System.out.println("Actor Name: " + act_name + " | Actor GUID: " + act_guid );
                 log.debug("Actor Name: " + act_name + " | Actor GUID: " + act_guid );
             }
+            srs.close();
 
         }
         catch(Exception e){
@@ -171,7 +174,8 @@ public class DatabaseOperations {
      * @param act_pubkey
      * @param act_cert64
      */
-    public String insert(String act_name, String act_type, String act_guid, String act_desc, String act_soapaxis2url, String act_class, String act_mapper_class, String act_pubkey, String act_cert64){
+    public String insert(String act_name, String act_type, String act_guid, String act_desc, String act_soapaxis2url, 
+    		String act_class, String act_mapper_class, String act_pubkey, String act_cert64){
 
     	if ((act_name == null) || (act_type == null) || (act_guid == null) || 
     			(act_soapaxis2url == null) || (act_class == null) || (act_mapper_class == null) ||
@@ -233,7 +237,7 @@ public class DatabaseOperations {
 
             boolean insertEntry = false;
             String act_production_deployment = FALSE_STRING;
-            if(clientIP.equalsIgnoreCase(numericIP)){
+            if (clientIP.equalsIgnoreCase(numericIP)){
                 insertEntry = true;
                 act_production_deployment = TRUE_STRING;
             }
@@ -285,7 +289,7 @@ public class DatabaseOperations {
                 	pStat.execute();
                 	pStat.close();
                 }
-                else{ // Existing actor
+                else { // Existing actor
                     // get ALL known entries
                 	Map<String, String> res = queryMapForGuid(act_guid, false);
                 	
@@ -969,19 +973,23 @@ public class DatabaseOperations {
             PreparedStatement pStat = conn.prepareStatement("SELECT act_name, act_guid FROM Actors WHERE act_name= ?");
             pStat.setString(1, input_act_name);
             ResultSet srs = pStat.executeQuery();
+            boolean ret = false;
             
             if (srs.next()) {
                 String act_name = srs.getString("act_name");
                 String act_guid = srs.getString("act_guid");
-                if ((act_name == null) || (act_guid == null))
-                	return false;
-                if (!act_guid.equals(input_act_guid) && act_name.equals(input_act_name)) {
-                	log.debug("DatabaseOperations: checkNameDuplicate - actor with guid " + act_guid + " already has the name " + act_name);
-                	return true;
+                if ((act_name == null) || (act_guid == null)) {
+                	ret = false;
+                } else {
+                	if (!act_guid.equals(input_act_guid) && act_name.equals(input_act_name)) {
+                		log.debug("DatabaseOperations: checkNameDuplicate - actor with guid " + act_guid + " already has the name " + act_name);
+                		ret = true;
+                	}
                 }
             }
             srs.close();
             pStat.close();
+            return ret;
         }
         catch(Exception e){
             //System.err.println ("Cannot connect to database server");
@@ -1043,8 +1051,93 @@ public class DatabaseOperations {
         }
 
         return result;
+    }
+    
+    /**
+     * Check the certificate of the actor. New actors always succeed, old actors must have a certificate matching what is in db
+     * @param act_guid
+     * @param chain - cert chain presented via SSL
+     * @return
+     */
+    protected boolean checkCert(String act_guid, X509Certificate[] chain) {
+
+    	if (act_guid == null)
+    		return false;
+    	
+        log.debug("Inside DatabaseOperations: checkCert() for " + act_guid);
 
 
+        if ((chain == null) || (chain.length < 1)) {
+        	log.error("Client speaking for actor " + act_guid + " did not present a valid certificate chain!");
+        	return false;
+        }
+        
+        Connection conn = null;
+
+        ResultSet srs = null;
+        PreparedStatement pStat = null;
+        boolean ret = false;
+        
+        try{
+
+            //System.out.println("Trying to get a new instance");
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            //System.out.println("Trying to get a database connection");
+            conn = DriverManager.getConnection (url, userName, password);
+            //System.out.println ("Database connection established");
+
+            pStat = conn.prepareStatement("SELECT act_cert64 FROM Actors WHERE act_guid= ?");
+            pStat.setString(1, act_guid);
+            srs = pStat.executeQuery();
+            
+            if (srs.next()) {
+                String act_cert64 = srs.getString("act_cert64");
+
+                if ((act_cert64 == null) || (act_cert64.length() == 0)){
+                	log.info("Actor " + act_guid + " has no cert hash entry, returning FAIL.");
+                	ret = false;
+                } else {
+                	// compare the 64-bit encodings of certificates (for simplicity)
+                	byte[] bytes = null;
+
+                	try {
+                		bytes = chain[0].getEncoded();
+                	}catch (CertificateEncodingException e) {
+                		throw new RuntimeException("Failed to encode the certificate");
+                	}
+                	String base64 = Base64.encodeBytes(bytes);
+                	if (act_cert64.equals(base64)) {
+                		log.info("Actor " + act_guid + " presented a matching certificate, proceeding.");
+                		ret = true;
+                	} else {
+                		log.error("Actor " + act_guid + " presented a certificate that differs from the one in the database, blocking!");
+                		ret = false;
+                	}
+                }
+            } else {
+            	log.info("No entry in the database for actor " + act_guid + ", proceeding");
+            	ret =  true;
+            }
+            srs.close();
+            pStat.close();
+            return ret;
+        }
+        catch(Exception e){
+            //System.err.println ("Cannot connect to database server");
+            log.error("DatabaseOperations: checkCert() - Cannot connect to database server: " + e.toString());
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
+        return false;
     }
 
     /**
