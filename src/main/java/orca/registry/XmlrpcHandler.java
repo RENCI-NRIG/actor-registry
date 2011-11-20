@@ -27,11 +27,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
+import org.apache.ws.commons.util.Base64;
 
 /**
  *
@@ -53,7 +55,7 @@ public class XmlrpcHandler {
         PropertyConfigurator.configure(p);
         log = Logger.getLogger(XmlrpcHandler.class);
         log.debug("Starting logging for Registry XmlrpcHandler");
-        strongCheck = Boolean.getBoolean(p.getProperty(registryStrongCheckingProperty));
+        strongCheck = new Boolean(p.getProperty(registryStrongCheckingProperty));
         log.info("Strong certificate checking status is set to " + strongCheck);
     }
 
@@ -94,11 +96,12 @@ public class XmlrpcHandler {
         
         log.debug("Checking cert in param");
         if (strongCheck && !DatabaseOperations.compareCertsBase64(act_cert64, getActorCerts())) {
-        	log.error("Client " + RegistryServlet.getClientIpAddress() + "/" +  act_guid + " presented an SSL cert that does not match the one in 'insert'. Not allowed.");
+        	log.error("Client " + RegistryServlet.getClientIpAddress() + "/" +  act_guid + " presented an SSL cert that does not match the one in act_cert64 of 'insert'. Not allowed.");
+        	log.debug("Client " + act_guid + " presented certificate of " + getActorCerts()[0].getSubjectX500Principal());
         	return "STATUS: ERROR; your SSL cert does not match the one presented as act_cert64 parameter";
         }
         
-        log.debug("Checking cer in db");
+        log.debug("Checking cert in db");
         if (!clientCertCheck(act_guid)) {
         	log.error("Client " + RegistryServlet.getClientIpAddress() + "/" + act_guid + " failed certificate check. Not allowed.");
         	return "STATUS: ERROR; your SSL cert did not match what is already in the database";
