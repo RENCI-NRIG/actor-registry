@@ -1158,9 +1158,10 @@ public class DatabaseOperations {
      * @return
      */
     protected static boolean compareCertsBase64(String act_base64, X509Certificate[] chain) {
+    	
     	if ((act_base64 == null) || (chain == null) || (chain.length == 0))
     		return false;
-    	
+
       	// compare the 64-bit encodings of certificates (for simplicity)
     	byte[] bytes = null;
 
@@ -1169,9 +1170,9 @@ public class DatabaseOperations {
     	}catch (CertificateEncodingException e) {
     		throw new RuntimeException("Failed to encode the certificate");
     	}
-    	String base64 = Base64.encode(bytes);
+    	String base64 = Base64.encode(bytes).trim();
     	
-    	return act_base64.equals(base64);
+    	return act_base64.trim().equals(base64);
     }
 
     /**
