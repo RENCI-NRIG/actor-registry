@@ -39,13 +39,13 @@ Security
 
 As of version 2.1, registry validates SSL certificates presented to it by actors by comparing the certificate in the SSL connection against the one given by the actor as part of insert operation. 
 
-There are two checking modes - strong and weak (set using the property registry.strongChec in registry.properties). In weak  mode, if a certificate is not presented at update, it is allowed to proceed anyway (although a mismatch is not allowed). In strong mode clients must present an SSL client certificate to be allowed to update the database.
+There are two checking modes - strong and weak (set using the property registry.strongCheck in registry.properties). In weak  mode, if a certificate is not presented at update, it is allowed to proceed anyway (although a mismatch is not allowed). In strong mode clients must present an SSL client certificate to be allowed to update the database.
 
-Registry also does weaker types of checking for clients to come from the IP address matching the SOAP URL presented in the insert operation.
+Registry also does weaker types of checking for clients to come from the IP address matching the SOAP URL presented in the insert operation. An actor entry can only be updated if the update request comes from a client whose IP matches with the IP in the soapaxis2 url of the registered actor; An update request for an actor having an already registered guid, but with a different soapaxis url would be rejected. Display of failed registration attempts is not implemented in this version. If the client IP matches, Actor data (like updated ndl files) can be updated any number of times. The timestamp of the row is changed to the new one.
 
 Only update operations require SSL. Query operations can be performed on non-SSL connections.
 
-In order to properly use security features, Tomcat 7 is required, because it allows overriding the TrustManager. The following declaration needs to be made in the Connector (conf/server.xml) and AllTrustingTrustManager must be compiled and the resulting class file put under $CATALINA_HOME/lib:
+In order to properly use security features, Tomcat 7 is required, because it allows overriding the TrustManager. The following declaration needs to be made in the Connector (conf/server.xml) and AllTrustingTrustManager.java must be compiled and the resulting class file put under $CATALINA_HOME/lib:
 
     <Connector port="11443" protocol="HTTP/1.1" SSLEnabled="true"
                maxThreads="150" scheme="https" secure="true"
@@ -90,7 +90,7 @@ Viewing Registry Contents:
 
 The ORCA users have two options to view this registry.
 
-a.	Through a web interface - Users can use their browser to load jspscripts that feed off the Mysql database to display the available actors. Users would go to http://<webserver_address>:11080/registry/actors.php. For an example, visit http://geni.renci.org:11080/registry/actors.jsp . 
+a.	Through a web interface - Users can use their browser to load jspscripts that feed off the Mysql database to display the available actors. Users would go to http://<webserver_address>:11080/registry/actors.jsp. For an example, visit http://geni.renci.org:11080/registry/actors.jsp . 
 
 b.	Through a programmatic interface using xml-rpc clients - Users can write xml-rpc clients that talk to the XML-RPC server directly. They can invoke the following methods: (i) registryService.getActors - to get information on all actors in the registry, (ii) registryService.getBrokers - to get information on brokers, (iii) registryService.getAMs - to get information on site authorities (AM), and (iv) registryService.getSMs - to get information on service managers (SM). None of these methods take any arguments. Example:
 
@@ -101,12 +101,6 @@ Rules (time-out and security) for Actor Registry:
 Liveness:
 
 From Bella 2.2 version, every actor that registers with the registry, sends heartbeats every minute to the registry to say that the actor is alive. This keeps updating the 'last_update' time in the database. Actors that are live would display in green in the web-browser view of the registry. Actors that were live within the last 12 hours, but are not ticking since 2 minutes, would display in red - which would mean a potentially dead actor. Actors which have stopped ticking in the last 12 hours would not be displayed in the web-browser view. All actors ever registered are stored in the database. Actors which register themselves using a "localhost" in their soapaxis2 url would be displayed in yellow. This implies that the actor is in test deployment mode and other actors should not connect to this actor. A programmatic query using the xml-rpc interface will return all live actors in production mode, meaning actors which have ticked in the last two minutes and don't have localhost in their soap url.
-
-Security:
-
-An actor entry can only be updated if the update request comes from a client whose IP matches with the IP in the soapaxis2 url of the registered actor; An update request for an actor having an already registered guid, but with a different soapaxis url would be rejected. Display of failed registration attempts is not implemented in this version.
-If the client IP matches, Actor data (like updated ndl files) can be updated any number of times. The timestamp of the row is changed to the new one.
-
 
 Logging:
 -------

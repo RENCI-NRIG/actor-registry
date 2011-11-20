@@ -1,7 +1,25 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+* Copyright (c) 2011 RENCI/UNC Chapel Hill 
+*
+* @author Anirban Mandal, Ilia Baldine
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+* and/or hardware specification (the "Work") to deal in the Work without restriction, including 
+* without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
+* sell copies of the Work, and to permit persons to whom the Work is furnished to do so, subject to 
+* the following conditions:  
+* The above copyright notice and this permission notice shall be included in all copies or 
+* substantial portions of the Work.  
+*
+* THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
+* OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+* OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS 
+* IN THE WORK.
+*/
 
 package orca.registry;
 
@@ -24,6 +42,7 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
+import org.apache.ws.commons.util.Base64;
 
 /**
  *
@@ -134,7 +153,7 @@ public class DatabaseOperations {
             log.debug("Inside DatabaseOperations: testQuery() - Database connection established");
 
             Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet srs = stmt.executeQuery("SELECT * FROM TestActors");
+            ResultSet srs = stmt.executeQuery("SELECT * FROM Actors");
 
             while (srs.next()) {
                 String act_name = srs.getString("act_name");
@@ -146,7 +165,7 @@ public class DatabaseOperations {
 
         }
         catch(Exception e){
-            //System.err.println ("Cannot query the database server");
+            //System.err.println ("Cannot query the database server: " + e);
             log.error("Cannot query the database server: " + e.toString());
         }
         finally{
@@ -240,18 +259,17 @@ public class DatabaseOperations {
             if (clientIP.equalsIgnoreCase(numericIP)){
                 insertEntry = true;
                 act_production_deployment = TRUE_STRING;
-            }
-            else{
-                if (ipSoapUrl.equalsIgnoreCase("localhost")){ // Special check: if the soapaxis url is localhost (implying test deployment) set production deployment as false
-                    insertEntry = true;
-                    // FIXME: set to FALSE_STRING before deploying otherwise localhost actors will be considered valid
+                
+                if (ipSoapUrl.equalsIgnoreCase("localhost") || ipSoapUrl.equalsIgnoreCase("127.0.0.1")) { 
+                	// Special check: if the soapaxis url is localhost (implying test deployment) set production deployment as false
+
+                	// REMINDER: set to FALSE_STRING before deploying otherwise localhost actors will be considered valid
                     act_production_deployment = FALSE_STRING;
                 }
-                else {
-                    //System.out.println("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment. INSERT Failed !!!");
-                    log.error("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment. INSERT Failed !!!");
-                    return "STATUS: ERROR; Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor;";
-                }
+            }
+            else{
+            	log.error("Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor; It is also not a test deployment. INSERT Failed !!!");
+            	return "STATUS: ERROR; Can't verify the identity of the client; client IP doesn't match with IP in SOAP-Axis URL of the Actor;";
             }
 
             boolean actorExists = checkExistingGuid(act_guid);
@@ -1098,15 +1116,8 @@ public class DatabaseOperations {
                 	ret = false;
                 } else {
                 	// compare the 64-bit encodings of certificates (for simplicity)
-                	byte[] bytes = null;
-
-                	try {
-                		bytes = chain[0].getEncoded();
-                	}catch (CertificateEncodingException e) {
-                		throw new RuntimeException("Failed to encode the certificate");
-                	}
-                	String base64 = Base64.encodeBytes(bytes);
-                	if (act_cert64.equals(base64)) {
+                	
+                	if (compareCertsBase64(act_cert64, chain)) {
                 		log.info("Actor " + act_guid + " presented a matching certificate, proceeding.");
                 		ret = true;
                 	} else {
@@ -1138,6 +1149,29 @@ public class DatabaseOperations {
             }
         }
         return false;
+    }
+    
+    /**
+     * Compare base64 encoding of a cert to a first cert in a chain
+     * @param act_base64
+     * @param chain
+     * @return
+     */
+    protected static boolean compareCertsBase64(String act_base64, X509Certificate[] chain) {
+    	if ((act_base64 == null) || (chain == null) || (chain.length == 0))
+    		return false;
+    	
+      	// compare the 64-bit encodings of certificates (for simplicity)
+    	byte[] bytes = null;
+
+    	try {
+    		bytes = chain[0].getEncoded();
+    	}catch (CertificateEncodingException e) {
+    		throw new RuntimeException("Failed to encode the certificate");
+    	}
+    	String base64 = Base64.encode(bytes);
+    	
+    	return act_base64.equals(base64);
     }
 
     /**
@@ -1259,6 +1293,11 @@ public class DatabaseOperations {
 
         } 
         return false;
+    }
+    
+    public static void main(String[] args) {
+    	DatabaseOperations db = new DatabaseOperations();
+    	db.testQuery(null);
     }
     
 }
