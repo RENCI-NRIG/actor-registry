@@ -1,0 +1,31 @@
+<!DOCTYPE project [
+<!ENTITY deps SYSTEM "ant/deps.xml">
+]>
+<project name="orca.portal.webapp" default="help" basedir="." xmlns:artifact="urn:maven-artifact-ant">
+
+  &deps;
+  
+  <target name="help">
+    <echo>
+Build file options:
+            
+ant deploy - deploys to tomcat            
+ant undeploy - undeploy registry 
+    </echo>
+  </target>
+
+  <target name="deploy" description="Deploy web application">
+    <echo message="deploying target/${target.war} to ${url}" />
+    <deploy url="${url}"
+            username="${username}"
+            password="${password}"
+            path="${target.appname}"
+            war="target/${target.war}"
+            update="true" />
+  </target>
+
+  <target name="undeploy" description="Undeploy web application">
+    <undeploy url="${url}" username="${username}" password="${password}" path="${target.appname}" />
+  </target>
+</project>
+
