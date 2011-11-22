@@ -165,7 +165,7 @@
 				manageText = "Yes</br>";
 			else
 				manageText = "No</br>";
-			manageText+="<form action=\"secure/validate.jsp\" method=\"POST\" name=\"" + act_guid + "\"> " +
+			manageText+="<form action=\"secure/validate.jsp\" method=\"GET\" name=\"" + act_guid + "\"> " +
 			"<input type=\"hidden\" name=\"guid\" value=\"" + act_guid + "\" /> " +
 			"<input type=\"hidden\" name=\"action\" value=\"manage\" /> " +
 			"<input type=\"submit\" value=\"Manage\" /></form>";
