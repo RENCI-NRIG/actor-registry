@@ -34,12 +34,15 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.ws.commons.util.Base64;
@@ -50,7 +53,17 @@ import org.apache.ws.commons.util.Base64;
  */
 public class DatabaseOperations {
 
-    private static final String STATUS_SUCCESS = "STATUS: SUCCESS";
+    public static final String IMAGE_DATE = "ImageDate";
+	public static final String IMAGE_DESCRIPTION = "ImageDescription";
+	public static final String IMAGE_OWNER = "ImageOwner";
+	public static final String IMAGE_HASH = "ImageHash";
+	public static final String IMAGE_URL = "ImageURL";
+	public static final String IMAGE_NEUCA_VERSION = "ImageNeucaVersion";
+	public static final String IMAGE_VERSION = "ImageVersion";
+	public static final String IMAGE_NAME = "ImageName";
+	public static final String IMAGE_DEFAULT = "ImageDefault";
+	private static final String STATUS_STRING = "STATUS";
+	private static final String STATUS_SUCCESS = "STATUS: SUCCESS";
 	private static final String REGISTRY_DB_URL = "registry.dbUrl";
 	private static final String REGISTRY_PASSWORD = "registry.password";
 	private static final String REGISTRY_USERNAME = "registry.username";
@@ -181,6 +194,83 @@ public class DatabaseOperations {
         }
     }
 
+    /**
+     * Insert a new image into the database
+     * @param simpleName
+     * @param version
+     * @param neucaVersion
+     * @param imgURL
+     * @param hash
+     * @param owner
+     * @param secription
+     * @return
+     */
+    public String insertImage(String simpleName, String version, String neucaVersion, String imgURL, String hash, 
+    		String owner, String description, boolean isDefault) {
+
+    	if ((simpleName == null) || (version == null) || (neucaVersion == null) || (imgURL == null) || (hash == null)||
+    			(owner == null) || (description == null))
+    		return "STATUS: ERROR; invalid insert parameters";
+    	
+        log.debug("Inside DatabaseOperations: insertImage() - inserting image " + simpleName);
+        String status = STATUS_SUCCESS;
+        Connection conn = null;
+
+        // check for image duplicate
+        if (checkImageDuplicate("img_url", imgURL)) {
+        	log.error("This registration is invalid, image " + simpleName + "/" + imgURL + " will not be allowed to register");
+        	return "STATUS: ERROR; duplicate image URL detected";
+        }
+        
+        if (isDefault)
+        	undoDefaultImage();
+        
+        try {           
+            //System.out.println("Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: insert() - Trying to get a new instance");
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            //System.out.println("Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: insert() - Trying to get a database connection");
+            conn = DriverManager.getConnection (url, userName, password);
+            //System.out.println ("Database connection established");
+            log.debug("Inside DatabaseOperations: insert() - Database connection established");
+
+            Calendar cal = Calendar.getInstance();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String insertDate = sdf.format(cal.getTime());
+
+            PreparedStatement pStat = conn.prepareStatement("INSERT into `Images` ( `img_simple_name` , `img_ver` , `img_neuca_ver`, `img_url`, `img_hash`, `img_owner`, `img_description`, `img_date`, `img_default`) values " +
+                			 "(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                	pStat.setString(1, simpleName);
+                	pStat.setString(2, version);
+                	pStat.setString(3, neucaVersion);
+                	pStat.setString(4, imgURL);
+                	pStat.setString(5, hash);
+                	pStat.setString(6, owner);
+                	pStat.setString(7, description);
+                	pStat.setString(8, insertDate);
+                	pStat.setBoolean(9, isDefault);
+                	pStat.execute();
+                	pStat.close();
+        } catch(Exception e){
+            //System.err.println ("Error inserting into Actors table");
+            log.error("DatabaseOperations: insertImage() - Error inserting into Images table: " + e.toString());
+            status = "STATUS: ERROR; Exception encountered during insertImage " + e;
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
+        return status;
+    }
+    
     /**
      *  insert version for inserting the actors and their properties
      * @param act_name
@@ -636,9 +726,9 @@ public class DatabaseOperations {
     	HashMap<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
 
     	if (actorType == null) {
-    		result.put("STATUS", new HashMap<String, String>() {
+    		result.put(STATUS_STRING, new HashMap<String, String>() {
             	{
-            		put("STATUS", "Unknown actor type");
+            		put(STATUS_STRING, "Unknown actor type");
             	}
     		});
     		return result;
@@ -659,9 +749,9 @@ public class DatabaseOperations {
 
             Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
 
-            result.put("STATUS", new HashMap<String, String>() {
+            result.put(STATUS_STRING, new HashMap<String, String>() {
             	{
-            		put("STATUS", "No actors match the query");
+            		put(STATUS_STRING, "No actors match the query");
             	}
             });
             
@@ -680,9 +770,9 @@ public class DatabaseOperations {
                 srs = stmt.executeQuery("SELECT * FROM Actors where act_type=3");
             }
             else {
-                result.put("STATUS", new HashMap<String, String>() {
+                result.put(STATUS_STRING, new HashMap<String, String>() {
                 	{
-                		put("STATUS", "Unknown actor type");
+                		put(STATUS_STRING, "Unknown actor type");
                 	}
                 });
             }
@@ -756,15 +846,136 @@ public class DatabaseOperations {
         }
         
         if (result.size() > 1) 
-            result.put("STATUS", new HashMap<String, String>() {
+            result.put(STATUS_STRING, new HashMap<String, String>() {
             	{
-            		put("STATUS", STATUS_SUCCESS);
+            		put(STATUS_STRING, STATUS_SUCCESS);
             	}
             });
 
         return result;
     }
     
+    /**
+     * Get a map of images as map indexed by hash
+     * @return
+     */
+   public List<Map<String, String>> queryImageList() {
+    	
+    	List<Map<String, String>> result = new ArrayList<Map<String, String>>();
+    		
+    	log.debug("Inside DatabaseOperations: queryImageMap() - query for images");
+        Connection conn = null;
+
+        try{
+            //System.out.println("Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: queryImageMap() - Trying to get a new instance");
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            //System.out.println("Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: queryImageMap() - Trying to get a database connection");
+            conn = DriverManager.getConnection (url, userName, password);
+            //System.out.println ("Database connection established");
+            log.debug("Inside DatabaseOperations: queryImageMap() - Database connection established");
+
+            Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            
+            ResultSet srs = stmt.executeQuery("SELECT * FROM Images ORDER BY img_simple_name");
+
+            while (srs.next()) {
+            	HashMap<String, String> tmpMap = new HashMap<String, String>();
+            	//`img_simple_name` , `img_ver` , `img_neuca_ver`, `img_url`, `img_hash`, `img_owner`, `img_description`, `img_date`, `img_default`
+            	nonNullMapPut(tmpMap, IMAGE_NAME, srs.getString("img_simple_name"));
+            	nonNullMapPut(tmpMap, IMAGE_VERSION, srs.getString("img_ver"));
+            	nonNullMapPut(tmpMap, IMAGE_NEUCA_VERSION, srs.getString("img_neuca_ver"));
+            	nonNullMapPut(tmpMap, IMAGE_URL, srs.getString("img_url"));
+            	nonNullMapPut(tmpMap, IMAGE_HASH, srs.getString("img_hash"));
+            	nonNullMapPut(tmpMap, IMAGE_OWNER, srs.getString("img_owner"));
+            	nonNullMapPut(tmpMap, IMAGE_DESCRIPTION, srs.getString("img_description"));
+            	nonNullMapPut(tmpMap, IMAGE_DATE, srs.getString("img_date"));
+            	nonNullMapPut(tmpMap, IMAGE_DEFAULT, (srs.getBoolean("img_default") ? "True" : "False"));
+
+            	// save the result 
+            	result.add(tmpMap);
+            }
+            srs.close();
+        }
+        catch(Exception e){
+            //System.err.println ("Cannot query the database server");
+            log.error("Inside DatabaseOperations: queryImages() - Exception while querying the database server: " + e.toString());
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
+
+        return result;
+    }
+    
+   /**
+    * Get default image(s) (if exists)
+    * @return
+    */
+   public List<Map<String, String>> queryDefaultImage() {
+   		
+   	log.debug("Inside DatabaseOperations: queryImageMap() - query for images");
+       Connection conn = null;
+       List<Map<String, String>> result = new ArrayList<Map<String, String>>();
+       try{
+           //System.out.println("Trying to get a new instance");
+           log.debug("Inside DatabaseOperations: queryImageMap() - Trying to get a new instance");
+           Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+           //System.out.println("Trying to get a database connection");
+           log.debug("Inside DatabaseOperations: queryImageMap() - Trying to get a database connection");
+           conn = DriverManager.getConnection (url, userName, password);
+           //System.out.println ("Database connection established");
+           log.debug("Inside DatabaseOperations: queryImageMap() - Database connection established");
+
+           Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
+           
+           ResultSet srs = stmt.executeQuery("SELECT * FROM Images WHERE img_default=1 ORDER BY img_simple_name");
+
+           while (srs.next()) {
+        	   HashMap<String, String> tmpMap = new HashMap<String, String>();
+        	   //`img_simple_name` , `img_ver` , `img_neuca_ver`, `img_url`, `img_hash`, `img_owner`, `img_description`, `img_date`
+        	   nonNullMapPut(tmpMap, IMAGE_NAME, srs.getString("img_simple_name"));
+        	   nonNullMapPut(tmpMap, IMAGE_VERSION, srs.getString("img_ver"));
+        	   nonNullMapPut(tmpMap, IMAGE_NEUCA_VERSION, srs.getString("img_neuca_ver"));
+        	   nonNullMapPut(tmpMap, IMAGE_URL, srs.getString("img_url"));
+        	   nonNullMapPut(tmpMap, IMAGE_HASH, srs.getString("img_hash"));
+        	   nonNullMapPut(tmpMap, IMAGE_OWNER, srs.getString("img_owner"));
+        	   nonNullMapPut(tmpMap, IMAGE_DESCRIPTION, srs.getString("img_description"));
+        	   nonNullMapPut(tmpMap, IMAGE_DATE, srs.getString("img_date"));
+
+        	   // save the result 
+        	   result.add(tmpMap);
+           }
+           srs.close();
+       }
+       catch (Exception e){
+           //System.err.println ("Cannot query the database server");
+           log.error("Inside DatabaseOperations: queryImages() - Exception while querying the database server: " + e.toString());
+       }
+       finally{
+           if (conn != null){
+               try{
+                   conn.close ();
+                   //System.out.println ("Database connection terminated");
+                   log.debug("Database connection terminated");
+               } catch (Exception e){ /* ignore close errors */
+               }
+           }
+       }
+
+       return result;
+   }
+   
+   
     /**
      * Get data on one actor
      * @param act_guid
@@ -966,6 +1177,67 @@ public class DatabaseOperations {
         
     }
 
+    /**
+     * Check for duplicate image by checking a specific field in the table
+     * @param fieldName
+     * @param fieldVal
+     * @return
+     */
+    private boolean checkImageDuplicate(String fieldName, String fieldVal) {
+
+    	if ((fieldName == null) || (fieldVal == null))
+    		return false;
+    	
+        log.debug("Inside DatabaseOperations: checkImageDuplicate()");
+
+        Connection conn = null;
+
+        try {
+
+            //System.out.println("Trying to get a new instance");
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            //System.out.println("Trying to get a database connection");
+            conn = DriverManager.getConnection (url, userName, password);
+            //System.out.println ("Database connection established");
+
+            PreparedStatement pStat = conn.prepareStatement("SELECT ? FROM Images WHERE ?=?");
+            pStat.setString(1, fieldName);
+            pStat.setString(2, fieldName);
+            pStat.setString(3, fieldVal);
+            ResultSet srs = pStat.executeQuery();
+            boolean ret = false;
+            
+            if (srs.next()) {
+                String field = srs.getString(fieldName);
+                if (field == null) {
+                	ret = false;
+                } else {
+                	log.debug("DatabaseOperations: checkImageDuplicate - image with " + fieldName + " already has the value " + fieldVal);
+                	ret = true;
+                }
+            }
+            srs.close();
+            pStat.close();
+            return ret;
+        }
+        catch(Exception e){
+            //System.err.println ("Cannot connect to database server");
+            log.error("DatabaseOperations: checkImageDuplicate() - Cannot connect to database server: " + e.toString());
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
+        return false;
+    }
+    
     /**
      * Check if the database already contains an actor with the same name and different guid
      * @param name
@@ -1176,6 +1448,38 @@ public class DatabaseOperations {
     }
 
     /**
+     * Unmark any image previously marked default
+     */
+    private void undoDefaultImage() {
+    	Connection conn = null;
+    	try {
+    		Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+    		conn = DriverManager.getConnection (url, userName, password);
+
+    		PreparedStatement pStat = conn.prepareStatement("UPDATE Images SET img_default=0");
+    		if (pStat.executeUpdate() != 1)
+    			log.error("Unable to update image defaults");
+    		pStat.close();
+    	}
+    	catch(Exception e) {
+    		//System.err.println ("Cannot connect to database server");
+    		log.error("DatabaseOperations: undoDefaultImage() - Cannot connect to database server: " + e.toString());
+
+    	}
+    	finally {
+    		if (conn != null){
+    			try{
+    				conn.close ();
+    				//System.out.println ("Database connection terminated");
+    				log.debug("Database connection terminated");
+    			}
+    			catch (Exception e){ /* ignore close errors */
+    			}
+    		}
+    	}
+    }
+    
+    /**
      * Update a status of a particular entry ('True' means valid, anything else, invalid)
      * @param input_act_guid - actor guid
      * @param valid - True for Valid, False for Invalid
@@ -1194,7 +1498,7 @@ public class DatabaseOperations {
         else
         	tableValue = FALSE_STRING;
         
-        try{
+        try {
              //System.out.println("Trying to get a new instance");
              Class.forName ("com.mysql.jdbc.Driver").newInstance ();
              //System.out.println("Trying to get a database connection");
@@ -1208,14 +1512,14 @@ public class DatabaseOperations {
             	 log.error("Unable to update the state of actor " + input_act_guid);
              pStat.close();
          }
-         catch(Exception e){
+         catch(Exception e) {
              //System.err.println ("Cannot connect to database server");
              log.error("DatabaseOperations: updateEntryValidStatus() - Cannot connect to database server: " + e.toString());
 
          }
-         finally{
-             if (conn != null){
-                 try{
+         finally {
+             if (conn != null) {
+                 try {
                      conn.close ();
                      //System.out.println ("Database connection terminated");
                      log.debug("Database connection terminated");
@@ -1243,6 +1547,78 @@ public class DatabaseOperations {
             pStat.setString(1, input_act_guid);
             if (pStat.executeUpdate() != 1)
            	 log.error("Unable to delete entry for actor " + input_act_guid);
+            pStat.close();
+        }
+        catch(Exception e){
+            log.error("DatabaseOperations: deleteActor() - Cannot connect to database server: " + e.toString());
+
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
+    }
+    
+    /**
+     * Delete image based on hash
+     * @param input_act_guid
+     */
+    public void deleteImage(String hash) {
+    	if (hash == null)
+    		return;
+    	Connection conn = null;
+    	
+        try{
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            conn = DriverManager.getConnection (url, userName, password);
+
+            PreparedStatement pStat = conn.prepareStatement("DELETE FROM Images WHERE img_hash = ? LIMIT 1");
+            pStat.setString(1, hash);
+            if (pStat.executeUpdate() != 1)
+           	 log.error("Unable to delete entry for image with hash " + hash);
+            pStat.close();
+        }
+        catch(Exception e){
+            log.error("DatabaseOperations: deleteActor() - Cannot connect to database server: " + e.toString());
+
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
+    }
+    
+    /**
+     * Set default image based on hash
+     * @param input_act_guid
+     */
+    public void setDefaultImage(String hash) {
+    	if (hash == null)
+    		return;
+    	Connection conn = null;
+    	
+    	undoDefaultImage();
+    	
+        try{
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            conn = DriverManager.getConnection (url, userName, password);
+
+            PreparedStatement pStat = conn.prepareStatement("UPDATE Images SET img_default=1 WHERE img_hash = ?");
+            pStat.setString(1, hash);
+            if (pStat.executeUpdate() != 1)
+           	 log.error("Unable to update default entry " + hash);
             pStat.close();
         }
         catch(Exception e){
@@ -1298,7 +1674,25 @@ public class DatabaseOperations {
     
     public static void main(String[] args) {
     	DatabaseOperations db = new DatabaseOperations();
-    	db.testQuery(null);
+    	
+    	//System.out.println("Inserting a row");
+    	String status = db.insertImage("Test Image1", "1.0", "1.1", "http://geni-images.renci.org/images/image.xml", "asldjssz;iljawawehfasdfa", "ibaldin@renci.org", "This is a test image that were testing the database with.", false);
+    	System.out.println("done " + status);
+    	status = db.insertImage("Test Image2", "1.0", "1.1", "http://geni-images.renci.org/images/image.xml", "asldjsdz;ilasfleshfasdfa", "ibaldin@renci.org", "This is a test image that were testing the database with.", true);
+    	System.out.println("done " + status);
+    	status = db.insertImage("Test Image10", "1.0", "1.1", "http://geni-images.renci.org/images/image.xml", "asldjsdz;ilaswgeshfasdfa", "ibaldin@renci.org", "This is a test image that we're testing the database with.", true);
+    	System.out.println("done " + status);
+    	status = db.insertImage("Test Image15", "1.1", "1.1", "http://geni-images.renci.org/images/image.xml", "asldjsdz;ilaswgeshfasdfsdsaa", "ibaldin@renci.org", "This is a test image that we're testing the database with.", false);
+    	  	
+    	List<Map<String, String>> res = db.queryImageList();
+    	for (Map<String, String> m: res) {
+    		System.out.println(m.get(IMAGE_NAME));
+    	}
+    	res = db.queryDefaultImage();
+    	System.out.println("Default images");
+    	for (Map<String, String> m: res) {
+    		System.out.println(m.get(IMAGE_NAME));
+    	}
     }
     
 }
