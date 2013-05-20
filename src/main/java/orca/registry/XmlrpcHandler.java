@@ -23,17 +23,15 @@
 
 package orca.registry;
 
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.X509Certificate;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
-import org.apache.ws.commons.util.Base64;
 
 /**
  *
@@ -41,7 +39,7 @@ import org.apache.ws.commons.util.Base64;
  */
 public class XmlrpcHandler {
 
-    private static final String ORCA_ACTOR_REGISTRY_VERSION = "ORCA Actor Registry version 2.1";
+    private static final String ORCA_ACTOR_REGISTRY_VERSION = "ORCA Actor Registry version 2.2";
     // this is the path to orca/registry/registry.properties
 	public static final String registryLogProperties="orca.registry.registry";
 	public static final String registryStrongCheckingProperty="registry.strongCheck";
@@ -286,7 +284,32 @@ public class XmlrpcHandler {
 
     	return ORCA_ACTOR_REGISTRY_VERSION;
     }
+    
+    /**
+     * Image-registry-related functions
+     */
 
+    /**
+     * Get all available images
+     */
+    public List<Map<String, String>> getAllImages() {
+    	log.info("Inside XmlrpcHandler: getAllImages()");
+    	
+    	DatabaseOperations dbop = new DatabaseOperations();
+    	return dbop.queryImageList();
+    }
+    
+    /**
+     * Get the default image, if available
+     * @return
+     */
+    public List<Map<String, String>> getDefaultImage() {
+    	log.info("Inside XmlrpcHandler: getDefaultImage()");
+    	
+    	DatabaseOperations dbop = new DatabaseOperations();
+    	return dbop.queryDefaultImage();
+    }
+    
     
     /**
      * Tester function for certs. Stateless.
@@ -358,10 +381,10 @@ public class XmlrpcHandler {
     	
     	if ((chain == null) || (chain.length == 0)) {
     		if (!strongCheck) {
-    			log.info("Actor " + act_guid + " did not present a valid certificate, strong checking is disabled, proceeding.");
+    			log.info("Actor " + act_guid + " did not present an SSL client certificate, strong checking is disabled, proceeding.");
     			return true;
     		} else {
-    			log.error("Actor " + act_guid + " did not present a valid certificate, strong checking is enabled, blocking");
+    			log.error("Actor " + act_guid + " did not present an SSL client certificate, strong checking is enabled, blocking");
     			return false;
     		}
     	}
