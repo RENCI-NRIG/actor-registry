@@ -9,6 +9,19 @@
 <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/fonts/fonts-min.css" /> 
 <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/paginator/assets/skins/sam/paginator.css" /> 
 <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/datatable/assets/skins/sam/datatable.css" /> 
+
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/button/assets/skins/sam/button.css" />
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/container/assets/skins/sam/container.css" />
+
+
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/yahoo-dom-event/yahoo-dom-event.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/connection/connection-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/element/element-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/button/button-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/dragdrop/dragdrop-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/container/container-min.js"></script>
+
+
 <script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/yahoo-dom-event/yahoo-dom-event.js"></script> 
 <script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/connection/connection-min.js"></script> 
 <script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/json/json-min.js"></script> 
@@ -17,6 +30,8 @@
 <script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/datasource/datasource-min.js"></script> 
 <script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/event-delegate/event-delegate-min.js"></script> 
 <script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/datatable/datatable-min.js"></script> 
+
+
  
  <style type="text/css"> 
 /* custom styles for this example */
@@ -45,13 +60,14 @@
 </style> 
  
 <body class="yui-skin-sam">
-<h2><font face="courier, bookman"><center>ORCA Image Registry</center></font></h2><br>
-
 <center>
+<h2><font face="courier, bookman">ORCA Image Registry</font></h2><br>
+
 <script language="JavaScript">
     document.write('<b> This page last updated on ' + (new Date).toLocaleString() + '</b>');
     var registry = new Array();
 </script>
+
 </center>
 
 <% 
@@ -93,7 +109,95 @@
 	}
 %>		
  
-<div id="paginated"></div> 
+<div id="paginated">
+</div> 
+
+<center>
+<div>
+<button id="show" align="center">Add new image</button>
+</div>
+</center>
+
+<div id="dialog1" class="yui-pe-content">
+<div class="hd">Please enter your information</div>
+<div class="bd">
+<form method="GET" action="secure/image-action.jsp">
+	<label for="name" style="display:block;width:100px;">Image Name:</label><input type="textbox" name="name" />
+	<div class="clear"></div>
+	<label for="url" style="display:block;width:100px;">URL:</label><input type="textbox" name="url" />
+	<div class="clear"></div>
+	<label for="hash" style="display:block;width:100px;">Hash:</label><input type="textbox" name="hash" />
+	<div class="clear"></div> 
+	<label for="owner" style="display:block;width:100px;">Owner E-mail:</label><input type="textbox" name="owner" /> 
+	<div class="clear"></div>
+	<label for="ver" style="display:block;width:100px;">Version</label><input type="textbox" name="ver"/>
+	<div class="clear"></div>
+	<label for="nver" style="display:block;width:100px;">NEuca Version</label><input type="textbox" name="nver"/>
+	<div class="clear"></div>
+	<label for="desc" style="display:block;width:100px;">Description</label><textarea name="desc" rows="4" cols="50"></textarea>
+	
+	<input type="hidden" name="action" value="add" />
+</form>
+</div>
+</div>
+
+ 
+ <script>
+YAHOO.namespace("example.container");
+
+YAHOO.util.Event.onDOMReady(function () {
+	
+	// Define various event handlers for Dialog
+	var handleSubmit = function() {
+		this.submit();
+	};
+	var handleCancel = function() {
+		this.cancel();
+	};
+	var handleSuccess = function(o) {
+		//document.getElementById("resp").innerHTML = "OK";
+	};
+	var handleFailure = function(o) {
+		alert("Submission failed: " + o.status);
+	};
+
+    // Remove progressively enhanced content class, just before creating the module
+    YAHOO.util.Dom.removeClass("dialog1", "yui-pe-content");
+
+	// Instantiate the Dialog
+	YAHOO.example.container.dialog1 = new YAHOO.widget.Dialog("dialog1", 
+							{ width : "30em",
+							  fixedcenter : true,
+							  visible : false, 
+							  constraintoviewport : true,
+							  postmethod : "form",
+							  buttons : [ { text:"Submit", handler:handleSubmit, isDefault:true },
+								      { text:"Cancel", handler:handleCancel } ]
+							});
+
+	// Validate the entries in the form to require that both first and last name are entered
+	YAHOO.example.container.dialog1.validate = function() {
+		var data = this.getData();
+		if (data.firstname == "" || data.lastname == "") {
+			alert("Please enter your first and last names.");
+			return false;
+		} else {
+			return true;
+		}
+	};
+
+	// Wire up the success and failure handlers
+	YAHOO.example.container.dialog1.callback = { success: handleSuccess,
+						     failure: handleFailure };
+	
+	// Render the Dialog
+	YAHOO.example.container.dialog1.render();
+
+	YAHOO.util.Event.addListener("show", "click", YAHOO.example.container.dialog1.show, YAHOO.example.container.dialog1, true);
+	YAHOO.util.Event.addListener("hide", "click", YAHOO.example.container.dialog1.hide, YAHOO.example.container.dialog1, true);
+});
+</script>
+
  
 <script type="text/javascript"> 
 var rowFormatter = function(elTr, oRecord) {
