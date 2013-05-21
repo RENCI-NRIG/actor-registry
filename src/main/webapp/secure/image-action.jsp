@@ -12,7 +12,7 @@ if (data.getHash() != null) {
 		dbop.deleteImage(org.apache.commons.lang3.StringEscapeUtils.unescapeEcmaScript(data.getHash()));
 %>
 <script language="javascript" type="text/javascript">
-	window.location="../images.jsp";
+	window.location="images-admin.jsp";
 </script>
 <%
 	} else if (data.getAction().equals("setdefault")) {
@@ -20,7 +20,7 @@ if (data.getHash() != null) {
 		dbop.setDefaultImage(org.apache.commons.lang3.StringEscapeUtils.unescapeEcmaScript(data.getHash()));
 %>
 <script language="javascript" type="text/javascript">
-	window.location="../images.jsp";
+	window.location="images-admin.jsp";
 </script>
 <%
     } else if (data.getAction().equals("add")) {
@@ -28,13 +28,13 @@ if (data.getHash() != null) {
         dbop.insertImage(data.getName(), data.getVer(), data.getNver(), data.getUrl(), data.getHash(), data.getOwner(), data.getDesc(), false);
 %>
   <script language="javascript" type="text/javascript">
-	window.location="../images.jsp";
+	window.location="images-admin.jsp";
 </script>     
 <%
 	} else {
 %>
 <script language="javascript" type="text/javascript">
-	window.location="../images.jsp";
+	window.location="images-admin.jsp";
 </script>
 <%
 	}

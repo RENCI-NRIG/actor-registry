@@ -80,10 +80,19 @@
     	String fNver = org.apache.commons.lang3.StringEscapeUtils.escapeEcmaScript(en.get(DatabaseOperations.IMAGE_NEUCA_VERSION));
     	String fOwner = org.apache.commons.lang3.StringEscapeUtils.escapeEcmaScript(en.get(DatabaseOperations.IMAGE_OWNER));
     	String fDesc = org.apache.commons.lang3.StringEscapeUtils.escapeEcmaScript(en.get(DatabaseOperations.IMAGE_DESCRIPTION));
- 
+    	
+    	String deleteText="<form action=\"image-action.jsp\" method=\"GET\" hash=\"" + fHash + "\"> " +
+			"<input type=\"hidden\" name=\"hash\" value=\"" + en.get(DatabaseOperations.IMAGE_HASH) + "\" /> " +
+			"<input type=\"hidden\" name=\"action\" value=\"delete\" /> " +
+			"<input type=\"submit\" value=\"Delete\" /></form>";
+		String setDefaultText="<form action=\"image-action.jsp\" method=\"GET\" hash=\"" + fHash + "\"> " +
+			"<input type=\"hidden\" name=\"hash\" value=\"" + en.get(DatabaseOperations.IMAGE_HASH) + "\" /> " +
+			"<input type=\"hidden\" name=\"action\" value=\"setdefault\" /> " +
+			"<input type=\"submit\" value=\"Default\" /></form>";
 %>
 <script>
 		registry.push({
+		manage: '<%= deleteText %><br/><%= setDefaultText %>',
 		name: '<%= fName %>', 
 		url:'<%= fUrl %>', 
 		hash:'<%= fHash %>', 
@@ -102,9 +111,92 @@
 </div> 
 
 <center>
-<a href="secure/images-admin.jsp">Manage Images</a>
+<div>
+<button id="show" align="center">Add new image</button>
+</div>
 </center>
 
+<div id="dialog1" class="yui-pe-content">
+<div class="hd">Please enter your information</div>
+<div class="bd">
+<form method="GET" action="image-action.jsp">
+	<label for="name" style="display:block;width:100px;">Image Name:</label><input type="textbox" name="name" />
+	<div class="clear"></div>
+	<label for="url" style="display:block;width:100px;">URL:</label><input type="textbox" name="url" />
+	<div class="clear"></div>
+	<label for="hash" style="display:block;width:100px;">Hash:</label><input type="textbox" name="hash" />
+	<div class="clear"></div> 
+	<label for="owner" style="display:block;width:100px;">Owner E-mail:</label><input type="textbox" name="owner" /> 
+	<div class="clear"></div>
+	<label for="ver" style="display:block;width:100px;">Version</label><input type="textbox" name="ver"/>
+	<div class="clear"></div>
+	<label for="nver" style="display:block;width:100px;">NEuca Version</label><input type="textbox" name="nver"/>
+	<div class="clear"></div>
+	<label for="desc" style="display:block;width:100px;">Description</label><textarea name="desc" rows="4" cols="50"></textarea>
+	
+	<input type="hidden" name="action" value="add" />
+</form>
+</div>
+</div>
+
+ 
+ <script>
+YAHOO.namespace("example.container");
+
+YAHOO.util.Event.onDOMReady(function () {
+	
+	// Define various event handlers for Dialog
+	var handleSubmit = function() {
+		this.submit();
+	};
+	var handleCancel = function() {
+		this.cancel();
+	};
+	var handleSuccess = function(o) {
+		//document.getElementById("resp").innerHTML = "OK";
+	};
+	var handleFailure = function(o) {
+		alert("Submission failed: " + o.status);
+	};
+
+    // Remove progressively enhanced content class, just before creating the module
+    YAHOO.util.Dom.removeClass("dialog1", "yui-pe-content");
+
+	// Instantiate the Dialog
+	YAHOO.example.container.dialog1 = new YAHOO.widget.Dialog("dialog1", 
+							{ width : "30em",
+							  fixedcenter : true,
+							  visible : false, 
+							  constraintoviewport : true,
+							  postmethod : "form",
+							  buttons : [ { text:"Submit", handler:handleSubmit, isDefault:true },
+								      { text:"Cancel", handler:handleCancel } ]
+							});
+
+	// Validate the entries in the form to require that both first and last name are entered
+	YAHOO.example.container.dialog1.validate = function() {
+		var data = this.getData();
+		if (data.firstname == "" || data.lastname == "") {
+			alert("Please enter your first and last names.");
+			return false;
+		} else {
+			return true;
+		}
+	};
+
+	// Wire up the success and failure handlers
+	YAHOO.example.container.dialog1.callback = { success: handleSuccess,
+						     failure: handleFailure };
+	
+	// Render the Dialog
+	YAHOO.example.container.dialog1.render();
+
+	YAHOO.util.Event.addListener("show", "click", YAHOO.example.container.dialog1.show, YAHOO.example.container.dialog1, true);
+	YAHOO.util.Event.addListener("hide", "click", YAHOO.example.container.dialog1.hide, YAHOO.example.container.dialog1, true);
+});
+</script>
+
+ 
 <script type="text/javascript"> 
 var rowFormatter = function(elTr, oRecord) {
     if (oRecord.getData('def') == "True") {
@@ -116,6 +208,7 @@ var rowFormatter = function(elTr, oRecord) {
 YAHOO.util.Event.addListener(window, "load", function() {
     tableListener = function() {
         var myColumnDefs = [
+        	{key:"manage", label:"Actions", width:90},
         	{key:"name", label:"Image Name", width: 100},
             {key:"url", label:"URL", sortable:true, resizeable:true, width:150},
             {key:"hash", label:"Hash", sortable:true, resizeable:true, width:150},
@@ -129,7 +222,7 @@ YAHOO.util.Event.addListener(window, "load", function() {
         var myDataSource = new YAHOO.util.DataSource(registry);
         myDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
         myDataSource.responseSchema = {
-            fields: ["name", "ver", "nver", "url", "hash", "owner", "date", "desc", "def"]
+            fields: ["manage","name", "ver", "nver", "url", "hash", "owner", "date", "desc", "def"]
         };
  
         var myDataTable = new YAHOO.widget.DataTable("paginated",
@@ -148,18 +241,6 @@ YAHOO.util.Event.addListener(window, "load", function() {
     }();
 });
 </script> 
-
-<p>
-This service is also available as XMLRPC from <b>http://geni.renci.org:12080/registry/</b>.
-For example in Python:
-</p>
-<pre>
-import xmlrpclib
-proxy=xmlrpclib.ServerProxy("http://geni.renci.org:12080/registry/")
-proxy.registryService.getDefaultImage()
-proxy.registryService.getAllImages()
-</pre> 
-
 
 </body>
 </html>
