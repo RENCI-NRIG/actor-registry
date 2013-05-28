@@ -94,7 +94,7 @@
 		registry.push({
 		manage: '<%= deleteText %><br/><%= setDefaultText %>',
 		name: '<%= fName %>', 
-		url:'<%= fUrl %>', 
+		url:'<a href="<%= fUrl %>"><%= fUrl %></a>', 
 		hash:'<%= fHash %>', 
 		ver:'<%= fVer %>', 
 		nver:'<%= fNver %>', 
@@ -211,12 +211,12 @@ YAHOO.util.Event.addListener(window, "load", function() {
         	{key:"manage", label:"Actions", width:90},
         	{key:"name", label:"Image Name", width: 100},
             {key:"url", label:"URL", sortable:true, resizeable:true, width:150},
-            {key:"hash", label:"Hash", sortable:true, resizeable:true, width:150},
+            {key:"hash", label:"Hash", sortable:true, resizeable:true, width:300},
             {key:"desc", label:"Description", resizeable:true, width:250},
             {key:"ver", label:"Version", sortable:true, resizeable:true, width:50},
             {key:"nver", label:"Neuca", sortable:true, resizeable:true, width:50},
-            {key:"owner", label:"Owner", sortable:true, resizeable:true, width:150},
-            {key:"date", label:"Date added", sortable:true, resizeable:true, width:150},
+            {key:"owner", label:"Owner", sortable:true, resizeable:true, width:120},
+            {key:"date", label:"Date added", sortable:true, resizeable:true, width:70},
         ];
  
         var myDataSource = new YAHOO.util.DataSource(registry);
