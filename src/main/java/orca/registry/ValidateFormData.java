@@ -1,15 +1,7 @@
 package orca.registry;
 
 public class ValidateFormData {
-	String hash, action;
-	
-	public void setHash(String g) {
-		hash = g;
-	}
-	
-	public String getHash() {
-		return hash;
-	}
+	String action, guid;
 	
 	public void setAction(String a) {
 		action = a;
@@ -17,5 +9,13 @@ public class ValidateFormData {
 	
 	public String getAction() {
 		return action;
+	}
+	
+	public void setGuid(String g) {
+		guid = g;
+	}
+	
+	public String getGuid() {
+		return guid;
 	}
 }
