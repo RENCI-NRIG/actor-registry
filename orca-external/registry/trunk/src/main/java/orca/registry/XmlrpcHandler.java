@@ -200,7 +200,7 @@ public class XmlrpcHandler {
      * @return
      */
     public Map<String, Map<String, String>> getActors(boolean essentialOnly) {
-        log.info("Inside XmlrpdHandler: getActorsMap()");
+        log.info("Inside XmlrpdHandler: getActorsMap() from " + RegistryServlet.getThreadRequest().getRemoteHost());
 
         DatabaseOperations dbop = new DatabaseOperations();
         return dbop.queryMap(DatabaseOperations.QUERY_ACTORS, true, essentialOnly);
@@ -247,7 +247,7 @@ public class XmlrpcHandler {
      * @return
      */
     public Map<String, Map<String, String>> getBrokers(boolean essentialOnly) {
-        log.info("Inside XmlrpdHandler: getBrokersMap()");
+        log.info("Inside XmlrpdHandler: getBrokersMap() from " + RegistryServlet.getThreadRequest().getRemoteHost());
 
         DatabaseOperations dbop = new DatabaseOperations();
         return dbop.queryMap(DatabaseOperations.QUERY_BROKERS, true, essentialOnly);
@@ -259,7 +259,7 @@ public class XmlrpcHandler {
      * @return
      */
     public Map<String, Map<String, String>> getSMs(boolean essentialOnly) {
-        log.info("Inside XmlrpdHandler: getSMsMap()");
+        log.info("Inside XmlrpdHandler: getSMsMap() from " + RegistryServlet.getThreadRequest().getRemoteHost());
 
         DatabaseOperations dbop = new DatabaseOperations();
         return dbop.queryMap(DatabaseOperations.QUERY_SMS, true, essentialOnly);
@@ -270,7 +270,7 @@ public class XmlrpcHandler {
      * @return
      */
     public Map<String, Map<String, String>> getAMs(boolean essentialOnly) {
-        log.info("Inside XmlrpdHandler: getAMsMap()");
+        log.info("Inside XmlrpdHandler: getAMsMap() from " + RegistryServlet.getThreadRequest().getRemoteHost());
 
         DatabaseOperations dbop = new DatabaseOperations();
         return dbop.queryMap(DatabaseOperations.QUERY_AMS, true, essentialOnly);
@@ -293,7 +293,7 @@ public class XmlrpcHandler {
      * Get all available images
      */
     public List<Map<String, String>> getAllImages() {
-    	log.info("Inside XmlrpcHandler: getAllImages()");
+    	log.info("Inside XmlrpcHandler: getAllImages() from " + RegistryServlet.getThreadRequest().getRemoteHost());
     	
     	DatabaseOperations dbop = new DatabaseOperations();
     	return dbop.queryImageList();
@@ -304,7 +304,7 @@ public class XmlrpcHandler {
      * @return
      */
     public List<Map<String, String>> getDefaultImage() {
-    	log.info("Inside XmlrpcHandler: getDefaultImage()");
+    	log.info("Inside XmlrpcHandler: getDefaultImage() from " + RegistryServlet.getThreadRequest().getRemoteHost());
     	
     	DatabaseOperations dbop = new DatabaseOperations();
     	return dbop.queryDefaultImage();
