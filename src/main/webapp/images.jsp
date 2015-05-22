@@ -150,12 +150,12 @@ YAHOO.util.Event.addListener(window, "load", function() {
 </script> 
 
 <p>
-This service is also available as XMLRPC from <b>http://geni.renci.org:12080/registry/</b>.
+This service is also available as XMLRPC from <b>http://geni.renci.org:15080/registry/</b>.
 For example in Python:
 </p>
 <pre>
 import xmlrpclib
-proxy=xmlrpclib.ServerProxy("http://geni.renci.org:12080/registry/")
+proxy=xmlrpclib.ServerProxy("http://geni.renci.org:15080/registry/")
 proxy.registryService.getDefaultImage()
 proxy.registryService.getAllImages()
 </pre> 
