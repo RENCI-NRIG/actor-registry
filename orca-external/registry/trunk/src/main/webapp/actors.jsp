@@ -178,8 +178,8 @@
                             fndlLink = "Not Available";
                     }
                     else {
-                            andlLink = "<a href=\"http://geni.renci.org:12080/registry?showFile=" + abstractRdfFileNameShort + "\">Click for Abstract Site NDL</a>";
-                            fndlLink = "<td align=\"center\">" + "<a href=\"http://geni.renci.org:12080/registry?showFile=" + fullRdfFileNameShort + "\">Click for Full Site NDL</a></td>";
+                            andlLink = "<a href=\"http://geni.renci.org:15080/registry?showFile=" + abstractRdfFileNameShort + "\">Click for Abstract Site NDL</a>";
+                            fndlLink = "<td align=\"center\">" + "<a href=\"http://geni.renci.org:15080/registry?showFile=" + fullRdfFileNameShort + "\">Click for Full Site NDL</a></td>";
                     }
             }
 %>
@@ -194,8 +194,8 @@
 		aclass:'<%= act_class %>', 
 		apolicy:'<%= act_mapper_class %>',
 		aprod: '<%= act_production_deployment %>',
-		pubkey: '<a href="http://geni.renci.org:12080/registry?showString=<%= escaped_act_pubkey %>">Click for Public Key</a>',
-		cert64: '<a href="http://geni.renci.org:12080/registry?showString=<%= escaped_act_cert64 %>">Click for Certificate</a>',
+		pubkey: '<a href="http://geni.renci.org:15080/registry?showString=<%= escaped_act_pubkey %>">Click for Public Key</a>',
+		cert64: '<a href="http://geni.renci.org:15080/registry?showString=<%= escaped_act_cert64 %>">Click for Certificate</a>',
 		andl: '<%= andlLink %>',
 		fndl: '<%= fndlLink %>',
 		verified: '<%= act_verified %>',
