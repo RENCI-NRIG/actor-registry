@@ -80,7 +80,7 @@ Viewing Registry Contents:
 
 The ORCA users have two options to view this registry.
 
-a.	Through a web interface - Users can use their browser to load jspscripts that feed off the Mysql database to display the available actors. Users would go to http://<webserver_address>:11080/registry/actors.jsp. For an example, visit http://geni.renci.org:11080/registry/actors.jsp . 
+a.	Through a web interface - Users can use their browser to load jspscripts that feed off the Mysql database to display the available actors. Users would go to http://<webserver_address>:11080/registry/actors.jsp. For an example, visit http://geni.renci.org:15080/registry/actors.jsp . 
 
 b.	Through a programmatic interface using xml-rpc clients - Users can write xml-rpc clients that talk to the XML-RPC server directly. They can invoke the following methods: (i) registryService.getActors - to get information on all actors in the registry, (ii) registryService.getBrokers - to get information on brokers, (iii) registryService.getAMs - to get information on site authorities (AM), and (iv) registryService.getSMs - to get information on service managers (SM). None of these methods take any arguments. 
 
