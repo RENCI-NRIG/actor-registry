@@ -310,6 +310,20 @@ public class XmlrpcHandler {
     	return dbop.queryDefaultImage();
     }
     
+    /**
+     * Controller-registry-related functions
+     */
+    
+    /**
+     * Get all available controllers
+     */
+    public List<Map<String, String>> getAllControllers() {
+    	log.info("Inside XmlrpcHandler: getAllControllers() from " + RegistryServlet.getThreadRequest().getRemoteHost());
+    	
+    	DatabaseOperations dbop = new DatabaseOperations();
+    	return dbop.queryControllerList();
+    }
+    
     
     /**
      * Tester function for certs. Stateless.

@@ -62,6 +62,10 @@ public class DatabaseOperations {
 	public static final String IMAGE_VERSION = "ImageVersion";
 	public static final String IMAGE_NAME = "ImageName";
 	public static final String IMAGE_DEFAULT = "ImageDefault";
+	public static final String CTRL_NAME = "CtrlName";
+	public static final String CTRL_URL = "CtrlURL";
+	public static final String CTRL_DESCRIPTION = "CtrlDescription";
+	public static final String CTRL_ENABLED = "CtrlEnabled";
 	private static final String STATUS_STRING = "STATUS";
 	private static final String STATUS_SUCCESS = "STATUS: SUCCESS";
 	private static final String REGISTRY_DB_URL = "registry.dbUrl";
@@ -192,6 +196,64 @@ public class DatabaseOperations {
                 }
             }
         }
+    }
+    
+    /**
+     * Insert a new controller into the database
+     * @param simpleName
+     * @param cURL
+     * @param description
+     * @return
+     */
+    public String insertController(String simpleName, String cUrl, String description, boolean enabled) {
+
+    	if ((simpleName == null) || (cUrl == null) || (description == null))
+    		return "STATUS: ERROR; invalid insert parameters";
+    	
+        log.debug("Inside DatabaseOperations: insertController() - inserting controller " + simpleName + " " + cUrl);
+        String status = STATUS_SUCCESS;
+        Connection conn = null;
+
+        // check for image duplicate
+        if (checkImageDuplicate("ctrl_url", cUrl)) {
+        	log.error("This registration is invalid, controller " + simpleName + "/" + cUrl + " will not be allowed to register");
+        	return "STATUS: ERROR; duplicate controller URL detected";
+        }
+        
+        try {           
+            //System.out.println("Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: insertController() - Trying to get a new instance");
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            //System.out.println("Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: insertController() - Trying to get a database connection");
+            conn = DriverManager.getConnection (url, userName, password);
+            //System.out.println ("Database connection established");
+            log.debug("Inside DatabaseOperations: insertController() - Database connection established");
+
+            PreparedStatement pStat = conn.prepareStatement("INSERT into `Controllers` ( `ctrl_name` , `ctrl_url`, `ctrl_description`, `ctrl_enabled`) values " +
+                			 "(?, ?, ?, ?)");
+                	pStat.setString(1, simpleName);
+                	pStat.setString(2, cUrl);
+                	pStat.setString(3, description);
+                	pStat.setBoolean(4, enabled);
+                	pStat.execute();
+                	pStat.close();
+        } catch(Exception e){
+            log.error("DatabaseOperations: insertController() - Error inserting into Controller table: " + e.toString());
+            status = "STATUS: ERROR; Exception encountered during insertController " + e;
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
+        return status;
     }
 
     /**
@@ -851,6 +913,63 @@ public class DatabaseOperations {
             		put(STATUS_STRING, STATUS_SUCCESS);
             	}
             });
+
+        return result;
+    }
+    
+    /**
+     * Get a map of controller as map indexed by url
+     * @return
+     */
+   public List<Map<String, String>> queryControllerList() {
+    	
+    	List<Map<String, String>> result = new ArrayList<Map<String, String>>();
+    		
+    	log.debug("Inside DatabaseOperations: queryControllerList() - query for controllers");
+        Connection conn = null;
+
+        try{
+            //System.out.println("Trying to get a new instance");
+            log.debug("Inside DatabaseOperations: queryControllerList() - Trying to get a new instance");
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            //System.out.println("Trying to get a database connection");
+            log.debug("Inside DatabaseOperations: queryControllerList() - Trying to get a database connection");
+            conn = DriverManager.getConnection (url, userName, password);
+            //System.out.println ("Database connection established");
+            log.debug("Inside DatabaseOperations: queryControllerList() - Database connection established");
+
+            Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            
+            ResultSet srs = stmt.executeQuery("SELECT * FROM Controllers ORDER BY ctrl_name");
+
+            while (srs.next()) {
+            	HashMap<String, String> tmpMap = new HashMap<String, String>();
+            	//`img_simple_name` , `img_ver` , `img_neuca_ver`, `img_url`, `img_hash`, `img_owner`, `img_description`, `img_date`, `img_default`
+            	nonNullMapPut(tmpMap, CTRL_NAME, srs.getString("ctrl_name"));
+            	nonNullMapPut(tmpMap, CTRL_URL, srs.getString("ctrl_url"));
+            	nonNullMapPut(tmpMap, CTRL_DESCRIPTION, srs.getString("ctrl_description"));
+            	nonNullMapPut(tmpMap, CTRL_ENABLED, (srs.getBoolean("ctrl_enabled") ? "True" : "False"));
+
+            	// save the result 
+            	result.add(tmpMap);
+            }
+            srs.close();
+        }
+        catch(Exception e){
+            //System.err.println ("Cannot query the database server");
+            log.error("Inside DatabaseOperations: queryControllerList() - Exception while querying the database server: " + e.toString());
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    //System.out.println ("Database connection terminated");
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
 
         return result;
     }
@@ -1566,6 +1685,41 @@ public class DatabaseOperations {
     }
     
     /**
+     * Delete controller based on url
+     * @param url
+     */
+    public void deleteController(String cUrl) {
+    	if (cUrl == null)
+    		return;
+    	Connection conn = null;
+    	
+        try{
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            conn = DriverManager.getConnection (url, userName, password);
+
+            PreparedStatement pStat = conn.prepareStatement("DELETE FROM Controllers WHERE ctrl_url = ? LIMIT 1");
+            pStat.setString(1, cUrl);
+            if (pStat.executeUpdate() != 1)
+           	 log.error("Unable to delete entry for controller with url " + cUrl);
+            pStat.close();
+        }
+        catch(Exception e){
+            log.error("DatabaseOperations: deleteController() - Cannot connect to database server: " + e.toString());
+
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
+    }
+    
+    /**
      * Delete image based on hash
      * @param input_act_guid
      */
@@ -1585,7 +1739,61 @@ public class DatabaseOperations {
             pStat.close();
         }
         catch(Exception e){
-            log.error("DatabaseOperations: deleteActor() - Cannot connect to database server: " + e.toString());
+            log.error("DatabaseOperations: deleteImage() - Cannot connect to database server: " + e.toString());
+
+        }
+        finally{
+            if (conn != null){
+                try{
+                    conn.close ();
+                    log.debug("Database connection terminated");
+                }
+                catch (Exception e){ /* ignore close errors */
+                }
+            }
+        }
+    }
+    
+    
+    /**
+     * Toggle controller enablement
+     * @param input_act_guid
+     */
+    public void toggleController(String cUrl) {
+    	if (cUrl == null)
+    		return;
+    	Connection conn = null;
+    	
+    	undoDefaultImage();
+    	
+        try{
+            Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+            conn = DriverManager.getConnection (url, userName, password);
+
+            PreparedStatement stmt = conn.prepareStatement("SELECT ctrl_enabled FROM Controllers WHERE ctrl_url = ?");
+            stmt.setString(1, cUrl);
+            ResultSet srs = stmt.executeQuery();
+
+            boolean enabled = true;
+            while (srs.next()) {
+            	enabled = srs.getBoolean("ctrl_enabled");
+            }
+            srs.close();
+            
+            PreparedStatement pStat;
+            
+            if (enabled)
+            	pStat = conn.prepareStatement("UPDATE Controllers SET ctrl_enabled=0 WHERE ctrl_url = ?");
+            else
+            	pStat = conn.prepareStatement("UPDATE Controllers SET ctrl_enabled=1 WHERE ctrl_url = ?");
+            
+            pStat.setString(1, cUrl);
+            if (pStat.executeUpdate() != 1)
+           	 log.error("Unable to toggle controller " + cUrl);
+            pStat.close();
+        }
+        catch(Exception e){
+            log.error("DatabaseOperations: enableController() - Cannot connect to database server: " + e.toString());
 
         }
         finally{
@@ -1622,7 +1830,7 @@ public class DatabaseOperations {
             pStat.close();
         }
         catch(Exception e){
-            log.error("DatabaseOperations: deleteActor() - Cannot connect to database server: " + e.toString());
+            log.error("DatabaseOperations: setDefaultImage() - Cannot connect to database server: " + e.toString());
 
         }
         finally{
