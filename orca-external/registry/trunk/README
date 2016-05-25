@@ -75,16 +75,6 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> t
 'ORCA Actor Registry verion 1.0'
 
-Note on PHP scripts and webserver:
-----------------------------------
-
-*** NOTE: This interface is not used now; We use jsp to show the Registry contents***
-
-There are a few php scripts - actors.php, sm.php, brokers.php and am.php, which connect to the mysql registry database and read data from the Actors table. These scripts know the db username, password and database name as the default ones - "registry", registry" and "ActorRegistry". They also assume that the webserver is running on the same machine that houses the mysql database. The webserver must be up and running. Basically httpd daemon needs to be running with php support. Check the relevant httpd.conf to enable php support. The php files have to be deployed to the web documents directory.
-
-On a OSX laptop, the php files need to be deployed at /Library/WebServer/Documents/ . Make sure that this directory has write permissions. Use 'sudo apachectl start' to start the apache webserver. The httpd.conf file is burried in /private/etc/apache2/httpd.conf . Uncomment "LoadModule php5_module..." to enable php support.
-
-
 Viewing Registry Contents:
 --------------------------
 
@@ -92,7 +82,9 @@ The ORCA users have two options to view this registry.
 
 a.	Through a web interface - Users can use their browser to load jspscripts that feed off the Mysql database to display the available actors. Users would go to http://<webserver_address>:11080/registry/actors.jsp. For an example, visit http://geni.renci.org:11080/registry/actors.jsp . 
 
-b.	Through a programmatic interface using xml-rpc clients - Users can write xml-rpc clients that talk to the XML-RPC server directly. They can invoke the following methods: (i) registryService.getActors - to get information on all actors in the registry, (ii) registryService.getBrokers - to get information on brokers, (iii) registryService.getAMs - to get information on site authorities (AM), and (iv) registryService.getSMs - to get information on service managers (SM). None of these methods take any arguments. Example:
+b.	Through a programmatic interface using xml-rpc clients - Users can write xml-rpc clients that talk to the XML-RPC server directly. They can invoke the following methods: (i) registryService.getActors - to get information on all actors in the registry, (ii) registryService.getBrokers - to get information on brokers, (iii) registryService.getAMs - to get information on site authorities (AM), and (iv) registryService.getSMs - to get information on service managers (SM). None of these methods take any arguments. 
+
+Similarly images and controllers are registered and can be viewed on controllers.jsp and images.jsp URL, respectively.
 
 
 Rules (time-out and security) for Actor Registry:
