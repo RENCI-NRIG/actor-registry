@@ -8,6 +8,23 @@
 	<version>3.1-SNAPSHOT</version>
 	<url>http://maven.apache.org</url>
 	<packaging>war</packaging>
+        <issueManagement>
+                <system>GitHub</system>
+                <url>https://github.com/RENCI-NRIG/actor-registry</url>
+        </issueManagement>
+        <ciManagement>
+                <system>Jenkins</system>
+                <url>https://ci.exogeni.net</url>
+        </ciManagement>
+        <scm>
+                <connection>scm:git:https://github.com/RENCI-NRIG/actor-registry.git</connection>
+                <developerConnection>scm:git:https://github.com/RENCI-NRIG/actor-registry.git</developerConnection>
+                <url>https://github.com/RENCI-NRIG/actor-registry</url>
+        </scm>
+        <organization>
+                <name>RENCI (Renaissance Computing Institute)</name>
+                <url>http://www.renci.org</url>
+        </organization>
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
