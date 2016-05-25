@@ -2,6 +2,7 @@ USE ActorRegistry;
 
 DROP TABLE IF EXISTS `Actors`;
 DROP TABLE IF EXISTS `Images`;
+DROP TABLE IF EXISTS `Controllers`;
 SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `Actors` (
@@ -15,8 +16,8 @@ CREATE TABLE `Actors` (
   `act_mapper_class` text,
   `act_pubkey` text,
   `act_cert64` text,
-  `act_abstract_rdf` text,
-  `act_full_rdf` text,
+  `act_abstract_rdf` LONGTEXT,
+  `act_full_rdf` LONGTEXT,
   `act_allocatable_units` text,
   `act_production_deployment` text,
   `act_last_update` datetime,
@@ -37,5 +38,14 @@ CREATE TABLE `Images` (
   `img_default` boolean,
   PRIMARY KEY(`img_id`),
   UNIQUE KEY `img_hash` (`img_hash`)
+) ENGINE=InnoDB AUTO_INCREMENT=175 DEFAULT CHARSET=utf8;
+CREATE TABLE `Controllers` (
+  `ctrl_id` int(11) NOT NULL auto_increment,
+  `ctrl_name` varchar(255) NOT NULL,
+  `ctrl_url` varchar(255) NOT NULL,
+  `ctrl_description` text,
+  `ctrl_enabled` boolean,
+  PRIMARY KEY(`ctrl_id`),
+  UNIQUE KEY `ctrl_url` (`ctrl_url`)
 ) ENGINE=InnoDB AUTO_INCREMENT=175 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
